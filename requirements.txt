@@ -1,0 +1,54 @@
+﻿# Zparty — Python dependencies
+# Install: pip install -r requirements.txt
+
+# Core HTTP + async
+httpx[http2,socks]>=0.27
+asyncio>=3.4.3
+
+# CLI
+typer[all]>=0.12
+rich>=13.7
+
+# Config
+pyyaml>=6.0
+
+# Recon
+python-whois>=0.9
+dnspython>=2.6
+requests>=2.31       # wayback fallback
+
+# Scanning / crawling
+playwright>=1.44     # run: playwright install chromium
+
+# Port scanning (optional, graceful fallback to socket scan)
+python-nmap>=0.7.1
+
+# Report generation
+jinja2>=3.1
+weasyprint>=61.2
+
+# Security / crypto (JWT module)
+pyjwt>=2.8
+
+# Data
+# sqlite3 is in stdlib
+
+# Web UI
+fastapi>=0.111
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9
+
+# System monitoring
+psutil>=5.9               # RAM/CPU monitoring for adaptive throttling
+
+# Anonymity / Tor control
+stem>=1.8.1            # Tor controller — rotate exit node via NEWNYM
+
+# AI engine — uses Ollama (local, offline, no API key needed)
+# Install Ollama: https://ollama.com/download
+# Then: ollama pull llama3.1
+# No extra Python packages needed — httpx calls Ollama's REST API directly
+
+# Testing
+pytest>=8.0
+pytest-asyncio>=0.23

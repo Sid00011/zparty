@@ -1,0 +1,41 @@
+# Scan output — never commit results or logs
+results/
+*.log
+last_scan_id.txt
+
+# Tor binary and data
+bin/
+core/tor_data/
+
+# Downloaded tools (nuclei, nmap)
+tools/nmap/
+tools/nuclei*
+
+# Wordlists are too large for GitHub
+wordlists/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# Secrets — never commit a real config
+# Keep config.yaml (it's a blank template) but block any local overrides
+config.local.yaml
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp

@@ -1,0 +1,153 @@
+﻿# Zparty - Automated Penetration Testing Framework
+# Edit this file before launching a scan.
+
+target:
+  url: ""                        # e.g. https://example.com
+  include_subdomains: true
+  crawl_depth: 3
+
+rate_limit:
+  requests_per_second: 10       # reduced for low-spec hardware
+  delay_between_requests: 0.1
+  max_concurrent_threads: 15    # reduced — was 30, too heavy for i5/7.6GB
+  timeout_per_request: 10
+  max_retries: 2
+
+scope:
+  include_subdomains: true
+  crawl_depth: 3
+  out_of_scope: []              # list of URLs/domains to never touch
+  exclude_paths:                # paths to never send attack payloads to
+    - /logout
+    - /signout
+    - /sign-out
+    - /log-out
+  include_paths: []             # if non-empty, only test these paths
+
+modules:
+  recon:
+    whois: true
+    dns: true
+    subdomain_enum: true
+    tech_fingerprint: true
+    ssl_analysis: true
+    js_analysis: true
+    wayback: true
+    error_analysis: true
+  scan:
+    port_scan: true
+    dir_bruteforce: true
+    crawler: true
+    header_analysis: true
+    waf_detection: true
+  vulns:
+    jwt: true
+    http_smuggling: true
+    ssrf: true
+    xxe: true
+    sqli: true
+    xss: true
+    race_conditions: true
+    subdomain_takeover: true
+    graphql: true
+    deserialization: true
+    cors: true
+    open_redirect: true
+    ssti: true
+    path_traversal: true
+    http_methods: true
+    idor: true
+    nosql_injection: true
+    cve_checks: true
+    nuclei: true
+    command_injection: true
+    default_creds: true
+    lfi: true
+    ssti_rce: true
+    ssrf_chain: true
+    mass_assignment: true
+    file_upload: true
+    idor_chain: true           # chained IDOR — cross-references IDs across all responses
+    oauth_tester: true         # OAuth 2.0/OIDC misconfig — state, redirect_uri, PKCE
+    race_advanced: true        # AI-targeted race conditions on financial endpoints
+    business_logic: true       # domain-aware business logic flaws (price, plan, quota)
+
+wordlists:
+  subdomains: "wordlists/subdomains-top1million.txt"
+  directories: "wordlists/directory-list-2.3-medium.txt"
+
+output:
+  results_dir: "results"
+  log_level: "INFO"             # DEBUG / INFO / WARNING / ERROR
+
+evasion:
+  rotate_user_agent: true       # random real browser UA per request — no tool fingerprint
+  jitter_ms: 300                # add 0–300ms random delay between requests (human pacing)
+
+tor:
+  enabled: true                 # hides IP during Phase 3 attack modules only (recon/scan run direct)
+  auto_start: true              # auto-start tor daemon if not already running
+  socks_port: 9050              # Tor SOCKS5 port (default)
+  control_port: 9051            # Tor control port for NEWNYM rotation
+  control_password: ""          # leave empty if no HashedControlPassword set
+  rotate_every: 10              # rotate exit node every N requests (0 = modules only)
+  rotate_between_modules: true  # new Tor circuit before each vuln module = new IP
+
+proxy:
+  enabled: false                # set true to route all traffic through a proxy
+  url: ""                       # single proxy: http://127.0.0.1:8080 or socks5://host:1080
+  rotate: false                 # set true to round-robin through proxy_list below
+  proxy_list: []                # e.g. ["http://proxy1:8080", "socks5://proxy2:1080"]
+
+ai:
+  enabled: false               # disabled during scan — enable manually after scan completes
+  model: "llama3.2:3b"         # 2GB model — loaded, safe for your 7.6GB RAM
+  host: "http://localhost:11434"  # Ollama API — runs locally, nothing sent externally
+  # Recommended models (run: ollama pull <name>):
+  #   llama3.1          4.7GB  best overall reasoning
+  #   qwen2.5-coder     4.7GB  best for technical/security tasks
+  #   mistral           4.1GB  fast and capable
+  #   deepseek-r1:8b    4.9GB  strongest reasoning chain
+  #   llama3.2          2.0GB  smallest/fastest
+
+interactsh:
+  server: ""                    # optional: your interactsh server for OOB detection
+                                # public servers: https://oast.pro / https://oast.fun
+
+notify:
+  slack:
+    webhook_url: ""             # Slack incoming webhook URL
+  email:
+    to: ""                      # recipient address
+    from: "zparty@localhost"
+    smtp_host: "smtp.gmail.com"
+    smtp_port: 587
+    username: ""
+    password: ""
+  webhook:
+    url: ""                     # any URL — receives JSON POST on scan complete
+    method: "POST"
+    headers: {}
+  jira:
+    url: ""                     # e.g. https://yourcompany.atlassian.net
+    project_key: "SEC"
+    email: ""
+    api_token: ""               # Jira API token (not password)
+
+auth:
+  type: none                    # none | cookie | bearer | basic | apikey | form
+  cookie: ""                    # raw cookie string: "session=abc123; csrf=xyz"
+  bearer: ""                    # Bearer token value
+  basic:
+    username: ""
+    password: ""
+  apikey:
+    header: "X-API-Key"
+    key: ""
+  form:
+    login_url: ""               # e.g. https://example.com/login
+    username_field: "username"
+    password_field: "password"
+    username: ""
+    password: ""
+    success_indicator: ""       # text that appears in the response after successful login

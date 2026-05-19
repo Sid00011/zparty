@@ -1,0 +1,467 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zparty Security Report — {{ target_url }}</title>
+<style>
+  :root {
+    --critical: #dc2626; --high: #ea580c; --medium: #d97706;
+    --low: #65a30d; --info: #2563eb;
+    --bg: #0f172a; --surface: #1e293b; --border: #334155;
+    --text: #e2e8f0; --muted: #94a3b8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+  /* Page breaks for PDF */
+  .page { page-break-before: always; padding: 40px; min-height: 100vh; }
+  .page:first-child { page-break-before: avoid; }
+  h1 { font-size: 2rem; font-weight: 700; }
+  h2 { font-size: 1.4rem; font-weight: 600; color: var(--muted); margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  h3 { font-size: 1rem; font-weight: 600; margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  th { background: var(--surface); color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+  .badge-Critical { background: var(--critical); color: #fff; }
+  .badge-High { background: var(--high); color: #fff; }
+  .badge-Medium { background: var(--medium); color: #fff; }
+  .badge-Low { background: var(--low); color: #fff; }
+  .badge-Info { background: var(--info); color: #fff; }
+  .grade-circle { width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 3rem; font-weight: 900; border: 6px solid currentColor; margin: 0 auto 16px; }
+  .grade-S { color: #22c55e; }
+  .grade-A { color: #84cc16; }
+  .grade-B { color: #eab308; }
+  .grade-C { color: #f97316; }
+  .grade-D { color: #ef4444; }
+  .grade-E { color: #dc2626; }
+  .score-bar-bg { background: var(--border); border-radius: 8px; height: 16px; overflow: hidden; margin: 8px 0; }
+  .score-bar { height: 100%; border-radius: 8px; background: linear-gradient(90deg, #dc2626, #eab308, #22c55e); }
+  .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin: 24px 0; }
+  .meta-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .meta-card .label { font-size: 11px; text-transform: uppercase; color: var(--muted); letter-spacing: .05em; }
+  .meta-card .value { font-size: 1.2rem; font-weight: 700; margin-top: 4px; }
+  .finding-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+  .finding-card.verified-card { border-color: #22c55e; box-shadow: 0 0 0 1px #22c55e22; }
+  .finding-card .proof { background: #0a0a1a; border: 1px solid var(--border); border-radius: 4px; padding: 12px; font-family: monospace; font-size: 12px; white-space: pre-wrap; word-break: break-all; margin-top: 12px; color: #a5f3fc; }
+  .badge-verified { background: #16a34a; color: #fff; display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; letter-spacing: .03em; }
+  .screenshot-wrap { margin-top: 16px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .screenshot-label { background: #16a34a; color: #fff; font-size: 11px; font-weight: 700; padding: 6px 12px; letter-spacing: .05em; display: flex; align-items: center; gap: 6px; }
+  .screenshot-wrap img { display: block; width: 100%; max-width: 900px; height: auto; }
+  .nuclei-badge { background: #0ea5e9; color: #fff; display: inline-block; padding: 2px 7px; border-radius: 3px; font-size: 10px; font-weight: 700; margin-left: 4px; vertical-align: middle; }
+  .risk-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin: 24px 0; }
+  .risk-cell { aspect-ratio: 1; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; position: relative; }
+  .risk-axis { color: var(--muted); font-size: 10px; }
+  .header-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 40px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 10; }
+  .logo { font-size: 1.2rem; font-weight: 900; letter-spacing: -0.05em; color: #38bdf8; }
+  .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin: 24px 0; }
+  .toc a { color: var(--text); text-decoration: none; display: block; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .toc a:last-child { border-bottom: none; }
+  .toc a:hover { color: #38bdf8; }
+  @media print {
+    body { background: #fff; color: #000; }
+    .header-bar { position: static; }
+    .page { page-break-before: always; padding: 20px; }
+    .page:first-child { page-break-before: avoid; }
+    .finding-card .proof { background: #f1f5f9; color: #0f172a; }
+    .screenshot-wrap img { max-width: 100%; page-break-inside: avoid; }
+    .screenshot-label { background: #16a34a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    :root { --surface: #f8fafc; --bg: #fff; --text: #0f172a; --muted: #64748b; --border: #e2e8f0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header-bar">
+  <span class="logo">⚡ ZPARTY</span>
+  <span style="color:var(--muted)">Security Assessment Report</span>
+  <span style="margin-left:auto;color:var(--muted)">{{ scan_date }}</span>
+</div>
+
+<!-- ═══ PAGE 1: EXECUTIVE SUMMARY ═══ -->
+<div class="page" id="executive">
+  <h1 style="margin-bottom:8px">Executive Summary</h1>
+  <p style="color:var(--muted);margin-bottom:32px">Automated security assessment of <strong>{{ target_url }}</strong></p>
+
+  <div style="text-align:center;margin-bottom:32px">
+    <div class="grade-circle grade-{{ score.grade }}">{{ score.grade }}</div>
+    <div style="font-size:2.5rem;font-weight:900">{{ score.score }}<span style="font-size:1rem;color:var(--muted)">/100</span></div>
+    <div style="color:var(--muted);margin-top:8px">{{ score.grade_description }}</div>
+    <div class="score-bar-bg" style="max-width:300px;margin:12px auto">
+      <div class="score-bar" style="width:{{ score.score }}%"></div>
+    </div>
+  </div>
+
+  <div class="meta-grid">
+    <div class="meta-card">
+      <div class="label">Target</div>
+      <div class="value" style="font-size:.9rem;word-break:break-all">{{ target_url }}</div>
+    </div>
+    <div class="meta-card">
+      <div class="label">Scan Date</div>
+      <div class="value" style="font-size:.9rem">{{ scan_date }}</div>
+    </div>
+    <div class="meta-card">
+      <div class="label">Duration</div>
+      <div class="value">{{ duration_seconds }}s</div>
+    </div>
+    <div class="meta-card">
+      <div class="label">Total Findings</div>
+      <div class="value">{{ score.total_findings }}</div>
+    </div>
+    <div class="meta-card">
+      <div class="label">Critical</div>
+      <div class="value" style="color:var(--critical)">{{ score.severity_counts.Critical }}</div>
+    </div>
+    <div class="meta-card">
+      <div class="label">High</div>
+      <div class="value" style="color:var(--high)">{{ score.severity_counts.High }}</div>
+    </div>
+    <div class="meta-card">
+      <div class="label">Medium</div>
+      <div class="value" style="color:var(--medium)">{{ score.severity_counts.Medium }}</div>
+    </div>
+    <div class="meta-card">
+      <div class="label">Low / Info</div>
+      <div class="value" style="color:var(--low)">{{ score.severity_counts.Low + score.severity_counts.Info }}</div>
+    </div>
+  </div>
+
+  <div class="toc">
+    <h3 style="margin-bottom:12px">Contents</h3>
+    <a href="#executive">1. Executive Summary</a>
+    <a href="#recon">2. Reconnaissance Results</a>
+    <a href="#vulns">3. Vulnerability Details</a>
+    <a href="#risk">4. Risk Matrix</a>
+    <a href="#compliance">5. Compliance (OWASP / PCI-DSS)</a>
+    <a href="#remediation">6. Remediation Roadmap</a>
+  </div>
+</div>
+
+<!-- ═══ PAGE 2: RECON ═══ -->
+<div class="page" id="recon">
+  <h2>Reconnaissance Results</h2>
+
+  {% if recon.get('tech') %}
+  <h3>Technology Stack</h3>
+  <table>
+    <tr><th>Component</th><th>Value</th></tr>
+    {% if recon.tech.web_server %}<tr><td>Web Server</td><td>{{ recon.tech.web_server }}</td></tr>{% endif %}
+    {% if recon.tech.powered_by %}<tr><td>Powered By</td><td>{{ recon.tech.powered_by }}</td></tr>{% endif %}
+    {% if recon.tech.cms %}<tr><td>CMS</td><td>{{ recon.tech.cms }}</td></tr>{% endif %}
+    {% if recon.tech.frameworks %}<tr><td>Frameworks</td><td>{{ recon.tech.frameworks | join(', ') }}</td></tr>{% endif %}
+  </table>
+  {% endif %}
+
+  {% if recon.get('ssl') and not recon.ssl.get('skipped') %}
+  <h3>SSL/TLS Certificate</h3>
+  <table>
+    <tr><th>Property</th><th>Value</th></tr>
+    <tr><td>TLS Version</td><td>{{ recon.ssl.tls_version }}{% if recon.ssl.deprecated_tls %} ⚠️ DEPRECATED{% endif %}</td></tr>
+    <tr><td>Expires</td><td>{{ recon.ssl.not_after }} ({{ recon.ssl.days_until_expiry }} days)</td></tr>
+    <tr><td>Issuer</td><td>{{ recon.ssl.issuer }}</td></tr>
+    <tr><td>Self-Signed</td><td>{{ recon.ssl.self_signed }}</td></tr>
+    <tr><td>SANs</td><td>{{ recon.ssl.sans | join(', ') }}</td></tr>
+  </table>
+  {% endif %}
+
+  {% if recon.get('dns') %}
+  <h3>DNS Records</h3>
+  <table>
+    <tr><th>Type</th><th>Records</th></tr>
+    {% for rtype, records in recon.dns.items() %}
+    {% if records %}
+    <tr><td>{{ rtype }}</td><td>{{ records | join(', ') }}</td></tr>
+    {% endif %}
+    {% endfor %}
+  </table>
+  {% endif %}
+
+  {% if recon.get('subdomains') and recon.subdomains %}
+  <h3>Discovered Subdomains ({{ recon.subdomains | length }})</h3>
+  <table>
+    <tr><th>#</th><th>Subdomain</th></tr>
+    {% for sub in recon.subdomains[:30] %}
+    <tr><td>{{ loop.index }}</td><td>{{ sub }}</td></tr>
+    {% endfor %}
+    {% if recon.subdomains | length > 30 %}<tr><td colspan="2" style="color:var(--muted)">… and {{ recon.subdomains | length - 30 }} more</td></tr>{% endif %}
+  </table>
+  {% endif %}
+
+  {% if scan.get('open_ports') %}
+  <h3>Open Ports</h3>
+  <table>
+    <tr><th>Port</th><th>Service</th><th>Version</th></tr>
+    {% for port, info in scan.open_ports.items() %}
+    <tr>
+      <td>{{ port }}</td>
+      <td>{{ info.service }}</td>
+      <td>{{ info.get('product', '') }} {{ info.get('version', '') }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+
+  {% if recon.get('js') and recon.js.secrets_found %}
+  <h3 style="color:var(--critical)">⚠️ Secrets Found in JavaScript Files</h3>
+  <table>
+    <tr><th>Type</th><th>File</th><th>Snippet</th></tr>
+    {% for secret in recon.js.secrets_found %}
+    <tr>
+      <td><span class="badge badge-Critical">{{ secret.type }}</span></td>
+      <td style="font-size:11px;word-break:break-all">{{ secret.file }}</td>
+      <td style="font-family:monospace;font-size:11px">{{ secret.snippet }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+</div>
+
+<!-- ═══ PAGE 3: VULNERABILITY DETAILS ═══ -->
+<div class="page" id="vulns">
+  <h2>Vulnerability Details ({{ findings | length }})</h2>
+
+  {% for finding in findings %}
+  <div class="finding-card{% if finding.verified %} verified-card{% endif %}">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+      <span class="badge badge-{{ finding.severity }}">{{ finding.severity }}</span>
+      {% if finding.verified %}
+      <span class="badge-verified">&#10003; VERIFIED by Playwright</span>
+      {% endif %}
+      {% if finding.module == "NucleiScan" %}
+      <span class="nuclei-badge">NUCLEI</span>
+      {% endif %}
+      <h3 style="margin:0">{{ finding.title }}</h3>
+      <span style="margin-left:auto;color:var(--muted);font-size:11px">Risk: {{ finding.risk_score }}/25</span>
+    </div>
+    <p style="color:var(--muted);margin-bottom:8px">{{ finding.description }}</p>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:8px">
+      <strong>URL:</strong> {{ finding.affected_url }}<br>
+      <strong>Module:</strong> {{ finding.module }} &nbsp;|&nbsp;
+      <strong>Impact:</strong> {{ finding.impact }}/5 &nbsp;|&nbsp;
+      <strong>Likelihood:</strong> {{ finding.likelihood }}/5
+      {% if finding.cvss_score %} &nbsp;|&nbsp;
+      <strong>CVSS:</strong> <span style="font-weight:700;color:
+        {%- if finding.cvss_score >= 9.0 %}var(--critical)
+        {%- elif finding.cvss_score >= 7.0 %}var(--high)
+        {%- elif finding.cvss_score >= 4.0 %}var(--medium)
+        {%- else %}var(--low){% endif %}">{{ "%.1f"|format(finding.cvss_score) }}</span>
+      {% if finding.cwe %}&nbsp;|&nbsp;<strong>{{ finding.cwe }}</strong>{% endif %}
+      {% endif %}
+    </div>
+    {% if finding.cvss_vector %}
+    <div style="font-size:10px;color:var(--muted);font-family:monospace;margin-bottom:8px;word-break:break-all">{{ finding.cvss_vector }}</div>
+    {% endif %}
+    <div class="proof">{{ finding.proof }}</div>
+    {% if finding.screenshot %}
+    <div class="screenshot-wrap">
+      <div class="screenshot-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        PLAYWRIGHT PROOF-OF-EXPLOIT SCREENSHOT
+      </div>
+      <img src="data:image/png;base64,{{ finding.screenshot }}" alt="Proof-of-exploit screenshot" loading="lazy">
+    </div>
+    {% endif %}
+    <div style="margin-top:12px;padding:12px;background:rgba(34,197,94,.08);border-radius:4px;border-left:3px solid #22c55e">
+      <strong style="color:#22c55e;font-size:11px">REMEDIATION:</strong>
+      <p style="margin-top:4px;font-size:12px">{{ finding.remediation }}</p>
+      {% if finding.references %}
+      <div style="margin-top:8px">
+        {% for ref in finding.references %}
+        <a href="{{ ref }}" style="color:var(--info);font-size:11px">{{ ref }}</a><br>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% else %}
+  <p style="color:var(--muted)">No vulnerabilities found.</p>
+  {% endfor %}
+</div>
+
+<!-- ═══ PAGE 4: RISK MATRIX ═══ -->
+<div class="page" id="risk">
+  <h2>Risk Matrix</h2>
+  <p style="color:var(--muted);margin-bottom:24px">Each finding is plotted by Impact (1–5, vertical) × Likelihood (1–5, horizontal). Risk score = Impact × Likelihood.</p>
+
+  <div style="display:inline-block">
+    <div style="display:flex;gap:4px;align-items:flex-end">
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:center;margin-right:8px">
+        {% for i in range(5, 0, -1) %}
+        <div class="risk-axis" style="width:24px;height:48px;display:flex;align-items:center;justify-content:center">{{ i }}</div>
+        {% endfor %}
+        <div style="color:var(--muted);font-size:10px;margin-top:4px">Impact</div>
+      </div>
+      <div>
+        {% for impact in range(5, 0, -1) %}
+        <div style="display:flex;gap:4px;margin-bottom:4px">
+          {% for likelihood in range(1, 6) %}
+          {% set cell_risk = impact * likelihood %}
+          {% if cell_risk >= 20 %}{% set cell_color = "#dc2626" %}
+          {% elif cell_risk >= 12 %}{% set cell_color = "#f97316" %}
+          {% elif cell_risk >= 6 %}{% set cell_color = "#eab308" %}
+          {% else %}{% set cell_color = "#22c55e" %}{% endif %}
+          <div style="width:80px;height:48px;background:{{ cell_color }}22;border:1px solid {{ cell_color }}55;border-radius:4px;position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column">
+            <span style="font-size:10px;color:{{ cell_color }};font-weight:700">{{ cell_risk }}</span>
+            <div style="position:absolute;top:2px;left:2px;right:2px;display:flex;flex-wrap:wrap;gap:1px">
+              {% for f in findings %}
+              {% if f.impact == impact and f.likelihood == likelihood %}
+              <span style="width:6px;height:6px;border-radius:50%;background:white;opacity:.9" title="{{ f.title }}"></span>
+              {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+        <div style="display:flex;gap:4px;margin-top:4px">
+          {% for l in range(1, 6) %}
+          <div class="risk-axis" style="width:80px;text-align:center">{{ l }}</div>
+          {% endfor %}
+        </div>
+        <div style="color:var(--muted);font-size:10px;text-align:center;margin-top:2px">Likelihood →</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:32px">
+    <h3>Findings by Risk Score</h3>
+    <table>
+      <tr><th>Risk</th><th>Severity</th><th>CVSS</th><th>CWE</th><th>Title</th><th>Impact</th><th>Likelihood</th></tr>
+      {% for f in findings | sort(attribute='risk_score', reverse=true) %}
+      <tr>
+        <td><strong>{{ f.risk_score }}</strong></td>
+        <td><span class="badge badge-{{ f.severity }}">{{ f.severity }}</span></td>
+        <td style="font-weight:700;color:
+          {%- if f.cvss_score >= 9.0 %}var(--critical)
+          {%- elif f.cvss_score >= 7.0 %}var(--high)
+          {%- elif f.cvss_score >= 4.0 %}var(--medium)
+          {%- else %}var(--low){% endif %}">
+          {{ "%.1f"|format(f.cvss_score) if f.cvss_score else "—" }}</td>
+        <td style="font-size:11px">{{ f.cwe if f.cwe else "—" }}</td>
+        <td>{{ f.title }}</td>
+        <td>{{ f.impact }}/5</td>
+        <td>{{ f.likelihood }}/5</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+
+<!-- ═══ PAGE 5: COMPLIANCE ═══ -->
+{% if compliance %}
+<div class="page" id="compliance">
+  <h2>Compliance Status</h2>
+
+  {% if compliance.owasp_top10 %}
+  <h3 style="margin-bottom:16px">OWASP Top 10 — 2021</h3>
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <span style="padding:4px 10px;border-radius:4px;background:#dc262622;color:var(--critical);font-size:12px;font-weight:700">
+      {{ compliance.owasp_fail_count }} FAIL
+    </span>
+    <span style="padding:4px 10px;border-radius:4px;background:#d9770622;color:var(--medium);font-size:12px;font-weight:700">
+      {{ compliance.owasp_warn_count }} WARN
+    </span>
+    <span style="padding:4px 10px;border-radius:4px;background:#65a30d22;color:var(--low);font-size:12px;font-weight:700">
+      {{ compliance.owasp_pass_count }} PASS
+    </span>
+  </div>
+  <table>
+    <tr><th>Control</th><th>Title</th><th>Status</th><th>Findings</th></tr>
+    {% for code, ctrl in compliance.owasp_top10.items() %}
+    <tr>
+      <td style="font-weight:700;white-space:nowrap">{{ code }}:2021</td>
+      <td>{{ ctrl.title }}</td>
+      <td>
+        {% if ctrl.status == 'FAIL' %}
+        <span class="badge badge-Critical">FAIL</span>
+        {% elif ctrl.status == 'WARN' %}
+        <span class="badge badge-Medium">WARN</span>
+        {% else %}
+        <span class="badge" style="background:#65a30d;color:#fff">PASS</span>
+        {% endif %}
+      </td>
+      <td style="font-size:11px;color:var(--muted)">
+        {% if ctrl.findings %}
+          {% for f in ctrl.findings[:3] %}
+            <span class="badge badge-{{ f.severity }}" style="font-size:10px">{{ f.severity }}</span> {{ f.title | truncate(50) }}<br>
+          {% endfor %}
+          {% if ctrl.findings | length > 3 %}…and {{ ctrl.findings | length - 3 }} more{% endif %}
+        {% else %}
+          <span style="color:#65a30d">No findings</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+
+  {% if compliance.pci_dss %}
+  <h3 style="margin-top:32px;margin-bottom:16px">PCI-DSS 4.0 — Key Requirements</h3>
+  <table>
+    <tr><th>Requirement</th><th>Title</th><th>Status</th></tr>
+    {% for req, ctrl in compliance.pci_dss.items() %}
+    <tr>
+      <td style="font-weight:700;white-space:nowrap">{{ req }}</td>
+      <td>{{ ctrl.title }}<br><span style="font-size:11px;color:var(--muted)">{{ ctrl.description }}</span></td>
+      <td>
+        {% if ctrl.status == 'FAIL' %}
+        <span class="badge badge-Critical">FAIL</span>
+        {% elif ctrl.status == 'WARN' %}
+        <span class="badge badge-Medium">WARN</span>
+        {% else %}
+        <span class="badge" style="background:#65a30d;color:#fff">PASS</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- ═══ PAGE 6: REMEDIATION ═══ -->
+<div class="page" id="remediation">
+  <h2>Remediation Roadmap</h2>
+  <p style="color:var(--muted);margin-bottom:24px">Ordered by risk score (highest first). Address Critical and High findings immediately.</p>
+
+  {% for finding in findings | sort(attribute='risk_score', reverse=true) %}
+  <div style="display:flex;gap:16px;margin-bottom:20px;padding:16px;background:var(--surface);border-radius:8px;border-left:4px solid
+    {% if finding.severity == 'Critical' %}var(--critical)
+    {% elif finding.severity == 'High' %}var(--high)
+    {% elif finding.severity == 'Medium' %}var(--medium)
+    {% else %}var(--low){% endif %}">
+    <div style="min-width:48px;text-align:center">
+      <div style="font-size:1.4rem;font-weight:900">{{ loop.index }}</div>
+      <div style="font-size:10px;color:var(--muted)">Risk {{ finding.risk_score }}</div>
+    </div>
+    <div style="flex:1">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span class="badge badge-{{ finding.severity }}">{{ finding.severity }}</span>
+        <strong>{{ finding.title }}</strong>
+      </div>
+      <p style="font-size:12px;color:var(--text);margin-bottom:6px">{{ finding.remediation }}</p>
+      <div style="font-size:11px;color:var(--muted)">
+        Affected: <code style="font-size:11px">{{ finding.affected_url }}</code>
+      </div>
+      {% if finding.references %}
+      <div style="margin-top:6px">
+        {% for ref in finding.references %}
+        <a href="{{ ref }}" style="color:var(--info);font-size:11px;margin-right:8px">📖 Reference</a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% else %}
+  <p style="color:var(--muted)">No findings to remediate.</p>
+  {% endfor %}
+
+  <div style="margin-top:40px;padding:20px;border:1px solid var(--border);border-radius:8px;text-align:center;color:var(--muted)">
+    <div>Generated by <strong style="color:#38bdf8">Zparty</strong> — Automated Web Penetration Testing Framework</div>
+    <div style="margin-top:4px;font-size:11px">For authorized security testing only. Report date: {{ scan_date }}</div>
+  </div>
+</div>
+
+</body>
+</html>

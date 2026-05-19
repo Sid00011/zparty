@@ -1,0 +1,105 @@
+##############################################################################
+# Zparty GitLab CI/CD — DAST Security Scanning
+# Add this to your .gitlab-ci.yml or include it:
+#   include:
+#     - project: 'your-group/zparty'
+#       file: '.gitlab-ci.yml'
+#
+# Required CI/CD variables (set in GitLab → Settings → CI/CD → Variables):
+#   SCAN_TARGET      — URL to scan (e.g. https://staging.example.com)
+#   SCAN_FAIL_ON     — Severity to fail on: critical / high / medium (default: critical)
+##############################################################################
+
+stages:
+  - security
+
+variables:
+  SCAN_TARGET:  "${STAGING_URL}"
+  SCAN_FAIL_ON: "critical"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+cache:
+  paths:
+    - .cache/pip/
+
+zparty-dast:
+  stage: security
+  image: python:3.11-slim
+  allow_failure: false
+
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq nmap curl
+    - pip install --quiet -r requirements.txt
+    - playwright install chromium --with-deps || echo "Playwright install optional"
+
+  script:
+    - echo "🔍 Scanning $SCAN_TARGET"
+    - |
+      python main.py scan "$SCAN_TARGET" \
+        --output results \
+        --config config.yaml || SCAN_EXITCODE=$?
+    - |
+      # Parse results and check against threshold
+      REPORT=$(ls results/*/report/report.json 2>/dev/null | head -1)
+      if [ -z "$REPORT" ]; then echo "No report found"; exit 0; fi
+      CRITICAL=$(python -c "import json,sys; d=json.load(open('$REPORT')); print(d['score']['severity_counts'].get('Critical',0))")
+      HIGH=$(python -c "import json,sys; d=json.load(open('$REPORT')); print(d['score']['severity_counts'].get('High',0))")
+      MEDIUM=$(python -c "import json,sys; d=json.load(open('$REPORT')); print(d['score']['severity_counts'].get('Medium',0))")
+      GRADE=$(python -c "import json; d=json.load(open('$REPORT')); print(d['score']['grade'])")
+      SCORE=$(python -c "import json; d=json.load(open('$REPORT')); print(d['score']['score'])")
+      echo "Grade=$GRADE Score=$SCORE Critical=$CRITICAL High=$HIGH Medium=$MEDIUM"
+      if [ "$SCAN_FAIL_ON" = "critical" ] && [ "$CRITICAL" -gt 0 ]; then
+        echo "❌ FAIL: $CRITICAL critical vulnerability/vulnerabilities found"; exit 1
+      fi
+      if [ "$SCAN_FAIL_ON" = "high" ] && [ $((CRITICAL+HIGH)) -gt 0 ]; then
+        echo "❌ FAIL: critical/high findings found"; exit 1
+      fi
+      if [ "$SCAN_FAIL_ON" = "medium" ] && [ $((CRITICAL+HIGH+MEDIUM)) -gt 0 ]; then
+        echo "❌ FAIL: findings above medium threshold"; exit 1
+      fi
+      echo "✅ Scan complete — threshold not exceeded"
+
+  after_script:
+    # Convert to GitLab DAST report format
+    - |
+      REPORT=$(ls results/*/report/report.json 2>/dev/null | head -1)
+      if [ -n "$REPORT" ]; then
+        python -c "
+import json, sys
+d = json.load(open('$REPORT'))
+gl = {'version': '14.1.2', 'vulnerabilities': []}
+for f in d.get('findings', []):
+    gl['vulnerabilities'].append({
+        'id': f.get('title','')[:50].replace(' ','_'),
+        'category': 'dast',
+        'name': f.get('title',''),
+        'message': f.get('description',''),
+        'description': f.get('description',''),
+        'cve': f.get('cwe',''),
+        'severity': f.get('severity','Unknown'),
+        'confidence': 'Medium',
+        'solution': f.get('remediation',''),
+        'scanner': {'id': 'zparty', 'name': 'Zparty'},
+        'links': [{'url': r} for r in f.get('references', [])],
+        'identifiers': [{'type': 'cwe', 'name': f.get('cwe',''), 'value': f.get('cwe','')}],
+        'location': {'hostname': '$SCAN_TARGET', 'path': f.get('affected_url','')},
+    })
+json.dump(gl, open('gl-dast-report.json','w'))
+print('GitLab DAST report written: gl-dast-report.json')
+"
+      fi
+
+  artifacts:
+    when: always
+    expire_in: 30 days
+    paths:
+      - results/
+      - gl-dast-report.json
+    reports:
+      dast: gl-dast-report.json
+
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_MERGE_REQUEST_IID'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$FORCE_SCAN == "true"'

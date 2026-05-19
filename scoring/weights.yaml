@@ -1,0 +1,34 @@
+﻿# Zparty scoring weights - edit to tune the scoring engine
+
+severity_penalties:
+  Critical: 40
+  High: 20
+  Medium: 8
+  Low: 3
+  Info: 0
+
+# Cap: each finding type deducts at most (2 * penalty) regardless of count
+cap_multiplier: 2
+
+# Grade thresholds (inclusive lower bound)
+grades:
+  S: 90    # Excellent - only Info findings or none
+  A: 75    # Good - only Low/Medium findings
+  B: 60    # Acceptable - some High findings
+  C: 45    # Concerning - multiple High findings
+  D: 30    # Poor - Critical findings present
+  E: 0     # Critical - multiple Critical findings
+
+# Page multipliers: findings on sensitive pages carry extra weight
+page_multipliers:
+  login: 1.5
+  admin: 1.5
+  register: 1.3
+  checkout: 1.3
+  api: 1.2
+  default: 1.0
+
+# Impact/Likelihood matrix bounds
+risk_matrix:
+  max_impact: 5
+  max_likelihood: 5
