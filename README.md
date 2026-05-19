@@ -2,11 +2,11 @@
 
 **Automated web penetration testing framework with local AI, built in Python.**
 
-Zparty runs a full black-box security audit in one command — recon, scanning, 30+ vulnerability modules, CVSS scoring, compliance mapping, and an AI-directed exploit engine — all from a browser UI with live streaming output.
+Zparty runs a full black-box security audit in one command — recon, scanning, 30+ vulnerability modules, CVSS scoring, compliance mapping, and an AI-directed exploit engine, all from a browser UI with live streaming output.
 
 No API keys. No cloud. Everything runs on your machine.
 
-![Zparty UI](assets/screenshot.png)
+![Zparty UI](assets/screenshot.PNG)
 
 ---
 
@@ -92,7 +92,7 @@ After the scan, the **AI Agent** loads the findings into a local LLM (Ollama), i
 | Module | Technique |
 |---|---|
 | SQL Injection | Error-based, boolean-blind, time-blind, UNION extraction |
-| XSS | Reflected, stored, DOM — 50+ context-aware payloads |
+| XSS | Reflected, stored, DOM - 50+ context-aware payloads |
 | SSTI | Jinja2, Twig, Freemarker, Velocity, Pebble detection |
 | SSTI → RCE | Template sandbox escapes → `os.popen()` chain |
 | Command Injection | Shell metacharacter injection with OOB confirmation |
@@ -126,17 +126,17 @@ After the scan, the **AI Agent** loads the findings into a local LLM (Ollama), i
 
 ## AI Exploit Engine
 
-After the scan, an optional AI agent loads findings into a **local LLM via Ollama** — zero data leaves the machine:
+After the scan, an optional AI agent loads findings into a **local LLM via Ollama** - zero data leaves the machine:
 
-1. **Chain analysis** — identifies multi-step exploit paths across findings (e.g. SSRF → cloud metadata → credentials → account takeover)
-2. **Target selection** — ranks findings by exploitability and selects the highest-impact ones
-3. **Live exploitation** — runs focused exploit routines per finding type:
+1. **Chain analysis** - identifies multi-step exploit paths across findings (e.g. SSRF → cloud metadata → credentials → account takeover)
+2. **Target selection** - ranks findings by exploitability and selects the highest-impact ones
+3. **Live exploitation** - runs focused exploit routines per finding type:
    - SQLi: UNION-based table/column/data extraction
    - XSS: cookie theft with Playwright browser automation
    - SSTI: sandbox escape → `os.popen()` RCE chain
    - LFI: `/etc/passwd`, `config.php`, PHP filter bypass
    - Default creds: automated login with screenshot proof
-4. **Playwright PoC** — captures browser screenshots of confirmed exploits as evidence
+4. **Playwright PoC** - captures browser screenshots of confirmed exploits as evidence
 
 Supported local models: `llama3.1`, `qwen2.5-coder`, `mistral`, `deepseek-r1:8b`, `llama3.2`
 
@@ -144,11 +144,11 @@ Supported local models: `llama3.1`, `qwen2.5-coder`, `mistral`, `deepseek-r1:8b`
 
 ## Evasion & anonymity
 
-- **User-agent rotation** — random real browser UA per request, no tool fingerprint in headers
-- **Jitter** — 0–300ms randomized delay between requests (human pacing)
-- **Tor integration** — Phase 3 attack traffic routes through Tor SOCKS5, new exit node per module via NEWNYM
-- **Proxy support** — HTTP/HTTPS/SOCKS5 proxies, round-robin rotation across a list
-- **Scope enforcement** — configurable out-of-scope domains, excluded paths, include-only lists
+- **User-agent rotation** - random real browser UA per request, no tool fingerprint in headers
+- **Jitter** - 0-300ms randomized delay between requests (human pacing)
+- **Tor integration** - Phase 3 attack traffic routes through Tor SOCKS5, new exit node per module via NEWNYM
+- **Proxy support** - HTTP/HTTPS/SOCKS5 proxies, round-robin rotation across a list
+- **Scope enforcement** - configurable out-of-scope domains, excluded paths, include-only lists
 
 ---
 
