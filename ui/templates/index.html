@@ -1,0 +1,1913 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zparty — Automated Pentest Framework</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════
+   RESET + CSS VARIABLES
+═══════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:          #04050f;
+  --bg2:         #080b1a;
+  --surface:     rgba(255,255,255,0.04);
+  --surface2:    rgba(255,255,255,0.07);
+  --border:      rgba(255,255,255,0.08);
+  --border2:     rgba(56,189,248,0.25);
+  --text:        #e2e8f0;
+  --muted:       #64748b;
+  --cyan:        #38bdf8;
+  --cyan2:       #0ea5e9;
+  --violet:      #818cf8;
+  --violet2:     #6366f1;
+  --green:       #34d399;
+  --red:         #f87171;
+  --orange:      #fb923c;
+  --yellow:      #fbbf24;
+  --critical:    #ef4444;
+  --high:        #f97316;
+  --medium:      #eab308;
+  --low:         #22c55e;
+  --info:        #3b82f6;
+  --glow-cyan:   0 0 20px rgba(56,189,248,0.4), 0 0 60px rgba(56,189,248,0.1);
+  --glow-violet: 0 0 20px rgba(129,140,248,0.4), 0 0 60px rgba(129,140,248,0.1);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ═══════════════════════════════════════════════
+   PARTICLE CANVAS
+═══════════════════════════════════════════════ */
+#particle-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════════════ */
+.app { position: relative; z-index: 1; }
+
+/* ── NAVBAR ── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  padding: 0 32px;
+  height: 64px;
+  background: rgba(4,5,15,0.7);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-logo {
+  font-size: 1.4rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  background: linear-gradient(135deg, var(--cyan), var(--violet));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.nav-logo .zap {
+  -webkit-text-fill-color: var(--cyan);
+  filter: drop-shadow(0 0 10px var(--cyan));
+  font-size: 1.2rem;
+}
+.nav-tagline {
+  margin-left: 16px;
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  font-weight: 500;
+}
+.nav-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.nav-status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ── HERO ── */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px 40px;
+  text-align: center;
+}
+
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border2);
+  background: rgba(56,189,248,0.06);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 32px;
+  animation: fade-in-down 0.6s ease both;
+}
+.hero-eyebrow span { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+
+.hero-title {
+  font-size: clamp(3.5rem, 10vw, 7rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  animation: fade-in-down 0.6s 0.1s ease both;
+}
+.hero-title .word-z {
+  background: linear-gradient(135deg, var(--cyan) 0%, var(--violet) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 40px rgba(56,189,248,0.3));
+}
+.hero-title .word-party { color: #fff; }
+
+.hero-sub {
+  margin-top: 20px;
+  font-size: clamp(1rem, 2.5vw, 1.2rem);
+  color: var(--muted);
+  max-width: 520px;
+  line-height: 1.6;
+  animation: fade-in-down 0.6s 0.2s ease both;
+}
+
+/* ── SCAN CARD ── */
+.scan-card {
+  margin-top: 48px;
+  width: 100%;
+  max-width: 680px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 32px;
+  backdrop-filter: blur(24px);
+  box-shadow: 0 32px 64px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);
+  animation: fade-in-up 0.7s 0.3s ease both;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.scan-card:focus-within {
+  border-color: var(--border2);
+  box-shadow: var(--glow-cyan), 0 32px 64px rgba(0,0,0,0.5);
+}
+
+.scan-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.url-input-wrap {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.url-input {
+  flex: 1;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  font-size: 1rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.url-input::placeholder { color: var(--muted); }
+.url-input:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(56,189,248,0.12);
+}
+
+.btn-scan {
+  padding: 16px 28px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, var(--cyan2), var(--violet2));
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.15s, box-shadow 0.2s, opacity 0.2s;
+  box-shadow: 0 4px 24px rgba(56,189,248,0.3);
+  position: relative;
+  overflow: hidden;
+}
+.btn-scan::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.btn-scan:hover { transform: translateY(-1px); box-shadow: 0 8px 32px rgba(56,189,248,0.4); }
+.btn-scan:hover::before { opacity: 1; }
+.btn-scan:active { transform: translateY(0); }
+.btn-scan:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.btn-scan .spinner {
+  display: none;
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+.btn-scan.loading .btn-text { display: none; }
+.btn-scan.loading .spinner { display: block; }
+
+.scan-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+.option-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  user-select: none;
+}
+.option-chip:hover { background: var(--surface2); border-color: rgba(56,189,248,0.2); color: var(--text); }
+.option-chip input[type=checkbox] { display: none; }
+.option-chip.active { border-color: var(--border2); color: var(--cyan); background: rgba(56,189,248,0.06); }
+.option-chip .chip-dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid currentColor; flex-shrink: 0; transition: background 0.2s; }
+.option-chip.active .chip-dot { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
+
+.threat-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  justify-content: center;
+}
+.threat-badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+/* ── STATS ROW ── */
+.stats-row {
+  display: flex;
+  gap: 32px;
+  margin-top: 64px;
+  animation: fade-in-up 0.7s 0.5s ease both;
+}
+.stat-item { text-align: center; }
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--cyan), var(--violet));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-top: 2px; }
+
+/* ═══════════════════════════════════════════════
+   SCAN DASHBOARD (hidden until scan starts)
+═══════════════════════════════════════════════ */
+#scan-dashboard {
+  display: none;
+  padding: 100px 24px 60px;
+  max-width: 1200px;
+  margin: 0 auto;
+  animation: fade-in-up 0.5s ease both;
+}
+#scan-dashboard.visible { display: block; }
+
+/* Phase Progress */
+.phase-track {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 40px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+.phase-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 90px;
+  position: relative;
+}
+.phase-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 16px;
+  left: calc(50% + 16px);
+  right: calc(-50% + 16px);
+  height: 2px;
+  background: var(--border);
+  transition: background 0.5s;
+}
+.phase-step.done:not(:last-child)::after { background: linear-gradient(90deg, var(--cyan), var(--violet)); }
+.phase-step.active:not(:last-child)::after { background: var(--border); }
+
+.phase-circle {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--bg2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  color: var(--muted);
+  transition: all 0.4s ease;
+  position: relative;
+  z-index: 1;
+}
+.phase-step.active .phase-circle {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: var(--glow-cyan);
+  animation: pulse-phase 1.5s ease-in-out infinite;
+}
+.phase-step.done .phase-circle {
+  border-color: var(--green);
+  background: rgba(52,211,153,0.12);
+  color: var(--green);
+}
+.phase-label { font-size: 10px; color: var(--muted); text-align: center; font-weight: 500; }
+.phase-step.active .phase-label { color: var(--cyan); }
+.phase-step.done .phase-label { color: var(--green); }
+
+@keyframes pulse-phase {
+  0%,100% { box-shadow: 0 0 12px rgba(56,189,248,0.5); }
+  50% { box-shadow: 0 0 24px rgba(56,189,248,0.8), 0 0 48px rgba(56,189,248,0.2); }
+}
+
+/* Dashboard Grid */
+.dash-grid {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 24px;
+}
+@media (max-width: 900px) { .dash-grid { grid-template-columns: 1fr; } }
+
+/* Log Terminal */
+.log-terminal {
+  background: rgba(0,0,0,0.6);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+  height: 480px;
+  display: flex;
+  flex-direction: column;
+}
+.log-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(0,0,0,0.3);
+}
+.log-dot { width: 10px; height: 10px; border-radius: 50%; }
+.log-dot-r { background: #ff5f57; }
+.log-dot-y { background: #febc2e; }
+.log-dot-g { background: #28c840; }
+.log-title { margin-left: 8px; font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+.log-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  line-height: 1.7;
+  scroll-behavior: smooth;
+}
+.log-body::-webkit-scrollbar { width: 4px; }
+.log-body::-webkit-scrollbar-track { background: transparent; }
+.log-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.log-entry { display: flex; gap: 10px; align-items: flex-start; }
+.log-time { color: var(--muted); flex-shrink: 0; }
+.log-mod { flex-shrink: 0; width: 80px; font-weight: 600; }
+.log-text { color: var(--text); word-break: break-word; }
+.log-INFO .log-mod { color: var(--cyan); }
+.log-WARNING .log-mod { color: var(--yellow); }
+.log-ERROR .log-mod { color: var(--red); }
+.log-entry.log-ERROR .log-text { color: var(--red); }
+.log-entry.log-WARNING .log-text { color: var(--yellow); }
+.log-entry.phase-announce {
+  margin: 8px 0;
+  padding: 8px 12px;
+  background: rgba(56,189,248,0.06);
+  border-left: 2px solid var(--cyan);
+  border-radius: 0 6px 6px 0;
+  color: var(--cyan);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+/* Right panel */
+.right-panel { display: flex; flex-direction: column; gap: 16px; }
+
+/* Score card */
+.score-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+  backdrop-filter: blur(20px);
+  text-align: center;
+  transition: border-color 0.5s, box-shadow 0.5s;
+}
+.score-card.scored { border-color: var(--border2); box-shadow: var(--glow-cyan); }
+
+.score-display {
+  font-size: 4.5rem;
+  font-weight: 900;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--cyan), var(--violet));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 4px;
+}
+.score-display.scored { animation: count-up 1s ease-out; }
+.score-max { font-size: 1rem; color: var(--muted); }
+
+.grade-badge {
+  display: inline-block;
+  font-size: 3rem;
+  font-weight: 900;
+  width: 70px; height: 70px;
+  line-height: 70px;
+  border-radius: 50%;
+  border: 3px solid currentColor;
+  margin: 16px 0 8px;
+  transition: all 0.5s;
+}
+.grade-S { color: #22c55e; box-shadow: 0 0 24px rgba(34,197,94,0.4); }
+.grade-A { color: #84cc16; box-shadow: 0 0 24px rgba(132,204,22,0.4); }
+.grade-B { color: #eab308; box-shadow: 0 0 24px rgba(234,179,8,0.4); }
+.grade-C { color: #f97316; box-shadow: 0 0 24px rgba(249,115,22,0.4); }
+.grade-D { color: #ef4444; box-shadow: 0 0 24px rgba(239,68,68,0.4); }
+.grade-E { color: #dc2626; box-shadow: 0 0 24px rgba(220,38,38,0.6); animation: warning-pulse 1s ease-in-out infinite; }
+
+.score-bar-wrap { margin: 12px 0; background: var(--border); border-radius: 99px; height: 8px; overflow: hidden; }
+.score-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--critical), var(--yellow), var(--green));
+  border-radius: 99px;
+  transition: width 1s cubic-bezier(0.4,0,0.2,1);
+  width: 0%;
+}
+.score-desc { font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+/* Findings mini-count */
+.sev-pills {
+  display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-top: 12px;
+}
+.sev-pill {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex; align-items: center; gap: 5px;
+}
+.sev-pill-C { background: rgba(239,68,68,0.15); color: var(--critical); border: 1px solid rgba(239,68,68,0.3); }
+.sev-pill-H { background: rgba(249,115,22,0.15); color: var(--high); border: 1px solid rgba(249,115,22,0.3); }
+.sev-pill-M { background: rgba(234,179,8,0.15); color: var(--medium); border: 1px solid rgba(234,179,8,0.3); }
+.sev-pill-L { background: rgba(34,197,94,0.15); color: var(--low); border: 1px solid rgba(34,197,94,0.3); }
+
+/* Module status grid */
+.module-grid {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  backdrop-filter: blur(20px);
+}
+.module-grid-title { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 14px; font-weight: 600; }
+.module-items { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.module-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.2);
+  font-size: 11px;
+  color: var(--muted);
+  border: 1px solid transparent;
+  transition: all 0.3s;
+}
+.module-item.running {
+  color: var(--cyan);
+  border-color: rgba(56,189,248,0.2);
+  background: rgba(56,189,248,0.05);
+}
+.module-item.done {
+  color: var(--green);
+  border-color: rgba(52,211,153,0.2);
+  background: rgba(52,211,153,0.05);
+}
+.module-item.error { color: var(--red); border-color: rgba(248,113,113,0.2); }
+.module-icon { font-size: 14px; }
+
+/* ═══════════════════════════════════════════════
+   FINDINGS TABLE
+═══════════════════════════════════════════════ */
+#findings-section {
+  display: none;
+  margin-top: 32px;
+  animation: fade-in-up 0.5s ease both;
+}
+#findings-section.visible { display: block; }
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-title .count-badge {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.filter-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.filter-pill {
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--surface);
+  color: var(--muted);
+  transition: all 0.2s;
+  user-select: none;
+}
+.filter-pill:hover { border-color: var(--border2); color: var(--text); }
+.filter-pill.active { background: rgba(56,189,248,0.1); border-color: var(--border2); color: var(--cyan); }
+.filter-pill.active-C { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.4); color: var(--critical); }
+.filter-pill.active-H { background: rgba(249,115,22,0.1); border-color: rgba(249,115,22,0.4); color: var(--high); }
+.filter-pill.active-M { background: rgba(234,179,8,0.1); border-color: rgba(234,179,8,0.4); color: var(--medium); }
+.filter-pill.active-L { background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.4); color: var(--low); }
+
+.finding-list { display: flex; flex-direction: column; gap: 12px; }
+
+.finding-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+  cursor: pointer;
+}
+.finding-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+.finding-card.sev-Critical { border-left: 3px solid var(--critical); }
+.finding-card.sev-High     { border-left: 3px solid var(--high); }
+.finding-card.sev-Medium   { border-left: 3px solid var(--medium); }
+.finding-card.sev-Low      { border-left: 3px solid var(--low); }
+.finding-card.sev-Info     { border-left: 3px solid var(--info); }
+
+.finding-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+}
+.sev-badge {
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  flex-shrink: 0;
+}
+.sev-badge-Critical { background: rgba(239,68,68,0.15); color: var(--critical); }
+.sev-badge-High     { background: rgba(249,115,22,0.15); color: var(--high); }
+.sev-badge-Medium   { background: rgba(234,179,8,0.15); color: var(--medium); }
+.sev-badge-Low      { background: rgba(34,197,94,0.15); color: var(--low); }
+.sev-badge-Info     { background: rgba(59,130,246,0.15); color: var(--info); }
+
+.finding-title { font-weight: 600; font-size: 0.9rem; flex: 1; }
+.finding-risk {
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.risk-dot { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; }
+.risk-dot-low { background: rgba(34,197,94,0.2); color: var(--low); }
+.risk-dot-med { background: rgba(234,179,8,0.2); color: var(--medium); }
+.risk-dot-high { background: rgba(249,115,22,0.2); color: var(--high); }
+.risk-dot-crit { background: rgba(239,68,68,0.2); color: var(--critical); }
+.finding-expand {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+.finding-expand.open { max-height: 600px; }
+.finding-body {
+  padding: 0 20px 20px;
+  border-top: 1px solid var(--border);
+}
+.finding-desc { font-size: 13px; color: var(--muted); padding: 14px 0 12px; line-height: 1.6; }
+.finding-url {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--cyan);
+  background: rgba(56,189,248,0.06);
+  border: 1px solid rgba(56,189,248,0.15);
+  border-radius: 6px;
+  padding: 8px 12px;
+  word-break: break-all;
+  margin-bottom: 12px;
+}
+.finding-proof {
+  background: rgba(0,0,0,0.5);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  line-height: 1.7;
+  color: #a5f3fc;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+}
+.remediation-box {
+  background: rgba(34,197,94,0.06);
+  border: 1px solid rgba(34,197,94,0.2);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+.remediation-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--green); margin-bottom: 6px; }
+.remediation-text { font-size: 12px; color: var(--text); line-height: 1.6; }
+
+/* ── Report buttons ── */
+.report-buttons {
+  display: none;
+  gap: 12px;
+  margin-top: 32px;
+  flex-wrap: wrap;
+}
+.report-buttons.visible { display: flex; }
+.btn-report {
+  padding: 12px 24px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-report:hover { border-color: var(--border2); background: var(--surface2); transform: translateY(-1px); }
+.btn-report.primary { background: linear-gradient(135deg, var(--cyan2), var(--violet2)); border-color: transparent; }
+.btn-report.primary:hover { box-shadow: var(--glow-cyan); }
+
+/* ═══════════════════════════════════════════════
+   ANIMATIONS + UTILS
+═══════════════════════════════════════════════ */
+@keyframes fade-in-down {
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes count-up {
+  from { opacity: 0; transform: scale(0.5); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes warning-pulse {
+  0%,100% { box-shadow: 0 0 24px rgba(220,38,38,0.4); }
+  50% { box-shadow: 0 0 48px rgba(220,38,38,0.8), 0 0 80px rgba(220,38,38,0.3); }
+}
+
+/* ── ACTION BUTTONS ── */
+.action-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.btn-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 16px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(0,0,0,0.35);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.btn-action::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.btn-action:hover { transform: translateY(-2px); }
+.btn-action:hover::before { opacity: 1; }
+.btn-action:active { transform: translateY(0); }
+.btn-action:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+.btn-action-scan {
+  box-shadow: 0 4px 24px rgba(56,189,248,0.2);
+  border-color: rgba(56,189,248,0.3);
+}
+.btn-action-scan::before {
+  background: linear-gradient(135deg, rgba(56,189,248,0.1), transparent);
+}
+.btn-action-scan:hover {
+  border-color: var(--cyan);
+  box-shadow: 0 8px 32px rgba(56,189,248,0.35);
+  color: var(--cyan);
+}
+
+.btn-action-agent {
+  box-shadow: 0 4px 24px rgba(129,140,248,0.2);
+  border-color: rgba(129,140,248,0.3);
+}
+.btn-action-agent::before {
+  background: linear-gradient(135deg, rgba(129,140,248,0.1), transparent);
+}
+.btn-action-agent:hover {
+  border-color: var(--violet);
+  box-shadow: 0 8px 32px rgba(129,140,248,0.35);
+  color: var(--violet);
+}
+
+.btn-text { font-size: 1rem; font-weight: 700; position: relative; z-index: 1; }
+.btn-sub  { font-size: 10px; font-weight: 400; color: var(--muted); letter-spacing: .02em; position: relative; z-index: 1; }
+
+.btn-action .spinner {
+  display: none;
+  width: 18px; height: 18px;
+  border: 2px solid rgba(255,255,255,0.25);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  position: relative; z-index: 1;
+}
+.btn-action.loading .btn-text,
+.btn-action.loading .btn-sub { display: none; }
+.btn-action.loading .spinner { display: block; }
+
+/* Agent phase track (8 steps) */
+.agent-phase-step { min-width: 72px; }
+
+/* Exploit CTA button */
+.btn-exploit-cta {
+  background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(249,115,22,0.15)) !important;
+  border-color: rgba(239,68,68,0.5) !important;
+  color: var(--red) !important;
+  font-weight: 700 !important;
+  animation: exploit-pulse 2s ease-in-out infinite;
+}
+.btn-exploit-cta:hover {
+  background: linear-gradient(135deg, rgba(239,68,68,0.25), rgba(249,115,22,0.25)) !important;
+  box-shadow: 0 0 24px rgba(239,68,68,0.3) !important;
+  transform: translateY(-1px);
+}
+@keyframes exploit-pulse {
+  0%,100% { box-shadow: 0 0 8px rgba(239,68,68,0.2); }
+  50%      { box-shadow: 0 0 20px rgba(239,68,68,0.5); }
+}
+
+/* Exploit result cards */
+.exploit-result-card {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid;
+  font-size: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.exploit-result-card.confirmed {
+  background: rgba(239,68,68,0.08);
+  border-color: rgba(239,68,68,0.3);
+  color: var(--red);
+}
+.exploit-result-card.partial {
+  background: rgba(234,179,8,0.06);
+  border-color: rgba(234,179,8,0.25);
+  color: var(--yellow);
+}
+.exploit-result-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.exploit-result-title { font-weight: 600; line-height: 1.4; }
+.exploit-result-output {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 4px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* Error toast */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: rgba(239,68,68,0.15);
+  border: 1px solid rgba(239,68,68,0.4);
+  color: var(--red);
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 9999;
+  backdrop-filter: blur(20px);
+  transition: transform 0.3s;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+
+<body>
+<canvas id="particle-canvas"></canvas>
+<div class="app">
+
+<!-- ═══ NAVBAR ═══ -->
+<nav>
+  <div class="nav-logo">
+    <span class="zap">⚡</span> ZPARTY
+  </div>
+  <span class="nav-tagline">Automated Pentest Framework</span>
+  <div class="nav-right">
+    <div class="nav-status-dot"></div>
+    <span>Ready</span>
+  </div>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<section class="hero" id="hero-section">
+  <div class="hero-eyebrow">
+    <span></span> Authorized Security Testing Only
+  </div>
+  <h1 class="hero-title">
+    <span class="word-z">Z</span><span class="word-party">PARTY</span>
+  </h1>
+  <p class="hero-sub">
+    Drop a URL. Full recon, 34 attack modules, AI agent, race conditions,
+    IDOR chains, OAuth bugs, business logic — risk score &amp; PDF report.
+  </p>
+
+  <div class="scan-card">
+    <div class="scan-label">Target URL</div>
+    <input class="url-input" id="target-url" type="url"
+      placeholder="https://example.com" autocomplete="off" spellcheck="false"
+      style="width:100%;margin-bottom:14px;">
+
+    <div class="action-buttons">
+      <button class="btn-action btn-action-scan" id="btn-scan" onclick="startScan('scan')">
+        <div class="spinner"></div>
+        <span class="btn-text">⚡ Full Scan</span>
+        <span class="btn-sub">34 modules · recon · exploits · report</span>
+      </button>
+      <button class="btn-action btn-action-agent" id="btn-agent" onclick="startScan('agent')">
+        <div class="spinner"></div>
+        <span class="btn-text">🤖 AI Agent</span>
+        <span class="btn-sub">IDOR · OAuth · race · business logic</span>
+      </button>
+    </div>
+
+    <div class="threat-badges">
+      <span class="threat-badge">JWT</span>
+      <span class="threat-badge">SQLi</span>
+      <span class="threat-badge">XSS</span>
+      <span class="threat-badge">SSRF</span>
+      <span class="threat-badge">XXE</span>
+      <span class="threat-badge">SSTI</span>
+      <span class="threat-badge">CORS</span>
+      <span class="threat-badge">IDOR</span>
+      <span class="threat-badge">Smuggling</span>
+      <span class="threat-badge">GraphQL</span>
+      <span class="threat-badge">Race</span>
+      <span class="threat-badge">Redirect</span>
+      <span class="threat-badge">Traversal</span>
+      <span class="threat-badge">Takeover</span>
+      <span class="threat-badge">Deserialize</span>
+      <span class="threat-badge" style="color:var(--violet);border-color:rgba(129,140,248,0.3)">IDOR Chain</span>
+      <span class="threat-badge" style="color:var(--violet);border-color:rgba(129,140,248,0.3)">OAuth</span>
+      <span class="threat-badge" style="color:var(--violet);border-color:rgba(129,140,248,0.3)">Biz Logic</span>
+      <span class="threat-badge" style="color:var(--violet);border-color:rgba(129,140,248,0.3)">AI Agent</span>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-item">
+      <div class="stat-value">34</div>
+      <div class="stat-label">Modules</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">AI</div>
+      <div class="stat-label">Powered</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">S–E</div>
+      <div class="stat-label">Grading</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">PDF</div>
+      <div class="stat-label">Report</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SCAN DASHBOARD ═══ -->
+<div id="scan-dashboard">
+
+  <!-- Phase Tracker (Scan mode) -->
+  <div class="phase-track" id="phase-track-scan">
+    <div class="phase-step" data-phase="0" id="phase-0">
+      <div class="phase-circle">0</div>
+      <div class="phase-label">Validate</div>
+    </div>
+    <div class="phase-step" data-phase="1" id="phase-1">
+      <div class="phase-circle">1</div>
+      <div class="phase-label">Recon</div>
+    </div>
+    <div class="phase-step" data-phase="2" id="phase-2">
+      <div class="phase-circle">2</div>
+      <div class="phase-label">Scan</div>
+    </div>
+    <div class="phase-step" data-phase="3" id="phase-3">
+      <div class="phase-circle">3</div>
+      <div class="phase-label">Vulns</div>
+    </div>
+    <div class="phase-step" data-phase="4" id="phase-4">
+      <div class="phase-circle">4</div>
+      <div class="phase-label">Score</div>
+    </div>
+    <div class="phase-step" data-phase="5" id="phase-5">
+      <div class="phase-circle">5</div>
+      <div class="phase-label">Report</div>
+    </div>
+  </div>
+
+  <!-- Phase Tracker (Agent mode) -->
+  <div class="phase-track" id="phase-track-agent" style="display:none;">
+    <div class="phase-step agent-phase-step" data-phase="0" id="aphase-0">
+      <div class="phase-circle">0</div>
+      <div class="phase-label">Init</div>
+    </div>
+    <div class="phase-step agent-phase-step" data-phase="1" id="aphase-1">
+      <div class="phase-circle">1</div>
+      <div class="phase-label">Crawl</div>
+    </div>
+    <div class="phase-step agent-phase-step" data-phase="2" id="aphase-2">
+      <div class="phase-circle">2</div>
+      <div class="phase-label">IDOR</div>
+    </div>
+    <div class="phase-step agent-phase-step" data-phase="3" id="aphase-3">
+      <div class="phase-circle">3</div>
+      <div class="phase-label">OAuth</div>
+    </div>
+    <div class="phase-step agent-phase-step" data-phase="4" id="aphase-4">
+      <div class="phase-circle">4</div>
+      <div class="phase-label">Race</div>
+    </div>
+    <div class="phase-step agent-phase-step" data-phase="5" id="aphase-5">
+      <div class="phase-circle">5</div>
+      <div class="phase-label">Biz Logic</div>
+    </div>
+    <div class="phase-step agent-phase-step" data-phase="6" id="aphase-6">
+      <div class="phase-circle">🤖</div>
+      <div class="phase-label">AI Agent</div>
+    </div>
+    <div class="phase-step agent-phase-step" data-phase="7" id="aphase-7">
+      <div class="phase-circle">7</div>
+      <div class="phase-label">Report</div>
+    </div>
+  </div>
+
+  <!-- Main dash grid -->
+  <div class="dash-grid">
+
+    <!-- Log Terminal -->
+    <div class="log-terminal">
+      <div class="log-header">
+        <div class="log-dot log-dot-r"></div>
+        <div class="log-dot log-dot-y"></div>
+        <div class="log-dot log-dot-g"></div>
+        <span class="log-title">zparty — live output</span>
+      </div>
+      <div class="log-body" id="log-body"></div>
+    </div>
+
+    <!-- Right panel -->
+    <div class="right-panel">
+
+      <!-- Score -->
+      <div class="score-card" id="score-card">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:16px;font-weight:600">Security Score</div>
+        <div class="score-display" id="score-display">—</div>
+        <div class="score-max" style="color:var(--muted)">/100</div>
+        <div id="grade-badge-wrap" style="margin:12px 0"></div>
+        <div class="score-bar-wrap">
+          <div class="score-bar-fill" id="score-bar"></div>
+        </div>
+        <div class="score-desc" id="score-desc">Scan in progress…</div>
+        <div class="sev-pills" id="sev-pills"></div>
+      </div>
+
+      <!-- Module status -->
+      <div class="module-grid">
+        <div class="module-grid-title">Module Status</div>
+        <div class="module-items" id="module-items">
+          <!-- populated by JS -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Findings Section -->
+  <div id="findings-section">
+    <div class="section-header">
+      <div class="section-title">
+        Findings
+        <span class="count-badge" id="findings-count">0</span>
+      </div>
+      <div class="filter-pills" id="filter-pills">
+        <div class="filter-pill active" onclick="filterFindings('all', this)">All</div>
+        <div class="filter-pill" onclick="filterFindings('Critical', this)">Critical</div>
+        <div class="filter-pill" onclick="filterFindings('High', this)">High</div>
+        <div class="filter-pill" onclick="filterFindings('Medium', this)">Medium</div>
+        <div class="filter-pill" onclick="filterFindings('Low', this)">Low</div>
+      </div>
+    </div>
+    <div class="finding-list" id="finding-list"></div>
+  </div>
+
+  <!-- Report Buttons + Exploit CTA -->
+  <div class="report-buttons" id="report-buttons">
+    <button class="btn-report primary" onclick="openReport('html')">📄 HTML Report</button>
+    <button class="btn-report" onclick="openReport('pdf')">📑 PDF</button>
+    <button class="btn-report" onclick="openReport('json')">🗂 JSON</button>
+    <button class="btn-report btn-exploit-cta" id="btn-exploit-cta" onclick="startExploit()" style="display:none">
+      🔥 Run Exploit Engine
+    </button>
+    <button class="btn-report" onclick="resetScan()">⚡ New Scan</button>
+  </div>
+
+  <!-- Exploit Dashboard (hidden until exploit starts) -->
+  <div id="exploit-dashboard" style="display:none;margin-top:32px;">
+
+    <!-- Exploit phase track -->
+    <div class="phase-track" id="phase-track-exploit" style="margin-bottom:28px;">
+      <div class="phase-step" id="ephase-0">
+        <div class="phase-circle">0</div><div class="phase-label">Load</div>
+      </div>
+      <div class="phase-step" id="ephase-1">
+        <div class="phase-circle">AI</div><div class="phase-label">Ollama</div>
+      </div>
+      <div class="phase-step" id="ephase-2">
+        <div class="phase-circle">2</div><div class="phase-label">Exploit</div>
+      </div>
+      <div class="phase-step" id="ephase-3">
+        <div class="phase-circle">📸</div><div class="phase-label">PoC Shots</div>
+      </div>
+      <div class="phase-step" id="ephase-4">
+        <div class="phase-circle">4</div><div class="phase-label">Report</div>
+      </div>
+    </div>
+
+    <!-- Exploit log + results grid -->
+    <div style="display:grid;grid-template-columns:1fr 380px;gap:20px;" id="exploit-grid">
+
+      <!-- Exploit log -->
+      <div class="log-terminal" style="height:360px;">
+        <div class="log-header">
+          <div class="log-dot log-dot-r"></div>
+          <div class="log-dot log-dot-y"></div>
+          <div class="log-dot log-dot-g"></div>
+          <span class="log-title" style="color:#f87171">🔥 exploit engine — live</span>
+        </div>
+        <div class="log-body" id="exploit-log-body"></div>
+      </div>
+
+      <!-- Exploit results panel -->
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:14px;padding:20px;text-align:center;">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:8px;font-weight:600;">Confirmed Exploits</div>
+          <div id="exploit-confirmed-count" style="font-size:3.5rem;font-weight:900;color:var(--red);line-height:1;">—</div>
+          <div id="exploit-attempted-count" style="font-size:12px;color:var(--muted);margin-top:4px;">of — attempted</div>
+        </div>
+        <div id="exploit-results-list" style="display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto;"></div>
+        <div id="exploit-report-btns" style="display:none;gap:8px;flex-wrap:wrap;">
+          <button class="btn-report primary" onclick="openExploitReport()">📄 PoC Report</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /scan-dashboard -->
+</div><!-- /app -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   PARTICLE SYSTEM — antigravity canvas
+═══════════════════════════════════════════════════════════════ */
+(function(){
+  const canvas = document.getElementById('particle-canvas');
+  const ctx = canvas.getContext('2d');
+  const mouse = { x: -9999, y: -9999 };
+  let particles = [];
+  let animId;
+
+  function resize(){
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  class Particle {
+    constructor(){
+      this.reset(true);
+    }
+    reset(randomPos){
+      this.x  = randomPos ? Math.random() * canvas.width  : Math.random() * canvas.width;
+      this.y  = randomPos ? Math.random() * canvas.height : -10;
+      this.vx = (Math.random() - 0.5) * 0.35;
+      this.vy = (Math.random() - 0.5) * 0.35;
+      this.r  = Math.random() * 1.8 + 0.6;
+      this.baseAlpha = Math.random() * 0.45 + 0.15;
+      this.alpha = this.baseAlpha;
+      // colour: mostly cyan/blue, occasional violet
+      const t = Math.random();
+      if(t < 0.55)      { this.hue = 195 + Math.random()*15; this.sat = 90; this.lit = 65; } // cyan
+      else if(t < 0.85) { this.hue = 220 + Math.random()*20; this.sat = 80; this.lit = 65; } // blue
+      else              { this.hue = 250 + Math.random()*20; this.sat = 85; this.lit = 70; } // violet
+    }
+
+    update(){
+      // Antigravity repulsion from cursor
+      const dx = this.x - mouse.x;
+      const dy = this.y - mouse.y;
+      const dist2 = dx*dx + dy*dy;
+      const REPEL_R = 160;
+      if(dist2 < REPEL_R*REPEL_R && dist2 > 0.01){
+        const dist = Math.sqrt(dist2);
+        const force = (REPEL_R - dist) / REPEL_R;
+        this.vx += (dx/dist) * force * 0.7;
+        this.vy += (dy/dist) * force * 0.7;
+      }
+
+      // Damping — drift back to calm
+      this.vx *= 0.972;
+      this.vy *= 0.972;
+
+      // Speed cap
+      const spd = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
+      if(spd > 3){ const s = 3/spd; this.vx *= s; this.vy *= s; }
+
+      this.x += this.vx;
+      this.y += this.vy;
+
+      // Wrap
+      if(this.x < -5)              this.x = canvas.width  + 5;
+      if(this.x > canvas.width +5) this.x = -5;
+      if(this.y < -5)              this.y = canvas.height + 5;
+      if(this.y > canvas.height+5) this.y = -5;
+
+      // Glow alpha near cursor
+      const glow = Math.max(0, 1 - Math.sqrt(dist2)/250);
+      this.alpha = this.baseAlpha + glow * 0.55;
+    }
+
+    draw(){
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.r, 0, Math.PI*2);
+      ctx.shadowBlur = 10 + this.alpha * 12;
+      ctx.shadowColor = `hsla(${this.hue},${this.sat}%,${this.lit}%,0.8)`;
+      ctx.fillStyle   = `hsla(${this.hue},${this.sat}%,${this.lit}%,${this.alpha})`;
+      ctx.fill();
+    }
+  }
+
+  function init(){
+    resize();
+    const count = Math.min(180, Math.floor(canvas.width * canvas.height / 6000));
+    particles = Array.from({length: count}, () => new Particle());
+  }
+
+  function drawConnections(){
+    const THRESH = 120;
+    ctx.shadowBlur = 0;
+    for(let i = 0; i < particles.length; i++){
+      for(let j = i+1; j < particles.length; j++){
+        const a = particles[i], b = particles[j];
+        const dx = a.x - b.x, dy = a.y - b.y;
+        const dist2 = dx*dx + dy*dy;
+        if(dist2 < THRESH*THRESH){
+          const alpha = (1 - Math.sqrt(dist2)/THRESH) * 0.25;
+          const h = (a.hue + b.hue) / 2;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.strokeStyle = `hsla(${h},80%,65%,${alpha})`;
+          ctx.lineWidth = 0.7;
+          ctx.stroke();
+        }
+      }
+    }
+  }
+
+  function loop(){
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawConnections();
+    ctx.shadowBlur = 0;
+    for(const p of particles){ p.update(); p.draw(); }
+    animId = requestAnimationFrame(loop);
+  }
+
+  window.addEventListener('resize', () => { resize(); });
+  window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+  window.addEventListener('mouseleave', () => { mouse.x = -9999; mouse.y = -9999; });
+
+  // Touch support
+  window.addEventListener('touchmove', e => {
+    mouse.x = e.touches[0].clientX;
+    mouse.y = e.touches[0].clientY;
+  }, { passive: true });
+  window.addEventListener('touchend', () => { mouse.x = -9999; mouse.y = -9999; });
+
+  init();
+  loop();
+
+  // Option chips toggle
+  document.querySelectorAll('.option-chip').forEach(chip => {
+    chip.addEventListener('click', () => chip.classList.toggle('active'));
+  });
+})();
+
+/* ═══════════════════════════════════════════════════════════════
+   SCAN LOGIC
+═══════════════════════════════════════════════════════════════ */
+let scanId = null;
+let ws = null;
+let currentFindings = [];
+let reportPaths = {};
+let currentPhase = -1;
+let currentMode = 'scan'; // 'scan' | 'agent'
+
+const MODULES_SCAN = [
+  { key:'WhoisLookup',      icon:'🌐', label:'WHOIS' },
+  { key:'DnsEnum',          icon:'🔍', label:'DNS' },
+  { key:'SubdomainEnum',    icon:'🌳', label:'Subdomains' },
+  { key:'TechFingerprint',  icon:'🔬', label:'Tech Stack' },
+  { key:'SslAnalysis',      icon:'🔒', label:'SSL/TLS' },
+  { key:'JsAnalysis',       icon:'📜', label:'JS Analysis' },
+  { key:'WaybackMiner',     icon:'🕰', label:'Wayback' },
+  { key:'ErrorAnalysis',    icon:'⚠️', label:'Error Probe' },
+  { key:'PortScanner',      icon:'🚪', label:'Ports' },
+  { key:'DirBruteforce',    icon:'📂', label:'Dir Brute' },
+  { key:'Crawler',          icon:'🕷', label:'Crawler' },
+  { key:'HeaderAnalysis',   icon:'📋', label:'Headers' },
+  { key:'WafDetection',     icon:'🛡', label:'WAF' },
+  { key:'JwtAttacks',       icon:'🎫', label:'JWT' },
+  { key:'HttpSmuggling',    icon:'🚢', label:'Smuggling' },
+  { key:'Ssrf',             icon:'🌀', label:'SSRF' },
+  { key:'Xxe',              icon:'📄', label:'XXE' },
+  { key:'SqlInjection',     icon:'💉', label:'SQLi' },
+  { key:'Xss',              icon:'💣', label:'XSS' },
+  { key:'RaceConditions',   icon:'🏁', label:'Race' },
+  { key:'SubdomainTakeover',icon:'🎯', label:'Takeover' },
+  { key:'GraphQL',          icon:'⬡', label:'GraphQL' },
+  { key:'Deserialization',  icon:'📦', label:'Deserialize' },
+  { key:'CorsCheck',        icon:'🔗', label:'CORS' },
+  { key:'OpenRedirect',     icon:'↗️', label:'Redirect' },
+  { key:'Ssti',             icon:'🧩', label:'SSTI' },
+  { key:'PathTraversal',    icon:'🗂', label:'Traversal' },
+  { key:'HttpMethods',      icon:'⚙️', label:'HTTP Methods' },
+  { key:'Idor',             icon:'🔑', label:'IDOR' },
+  { key:'CommandInjection', icon:'💻', label:'Cmd Inject' },
+  { key:'DefaultCreds',     icon:'🔓', label:'Default Creds' },
+  { key:'Lfi',              icon:'📁', label:'LFI' },
+  { key:'SstiRce',          icon:'🔥', label:'SSTI→RCE' },
+  { key:'SsrfChain',        icon:'⛓', label:'SSRF Chain' },
+  { key:'MassAssignment',   icon:'📝', label:'Mass Assign' },
+  { key:'FileUpload',       icon:'📤', label:'File Upload' },
+  { key:'IdorChain',        icon:'🔗', label:'IDOR Chain' },
+  { key:'OAuthTester',      icon:'🔐', label:'OAuth' },
+  { key:'RaceAdvanced',     icon:'⚡', label:'Race Adv.' },
+  { key:'BusinessLogic',    icon:'🧠', label:'Biz Logic' },
+  { key:'NucleiScan',       icon:'☢️', label:'Nuclei CVEs' },
+];
+
+const MODULES_AGENT = [
+  { key:'Crawler',       icon:'🕷',  label:'Crawler' },
+  { key:'IdorChain',     icon:'🔗',  label:'IDOR Chain' },
+  { key:'OAuthTester',   icon:'🔐',  label:'OAuth / OIDC' },
+  { key:'RaceAdvanced',  icon:'⚡',  label:'Race Cond.' },
+  { key:'BusinessLogic', icon:'🧠',  label:'Biz Logic' },
+  { key:'AIAgent',       icon:'🤖',  label:'AI Agent' },
+];
+
+// Active list depends on mode
+let MODULES = MODULES_SCAN;
+
+let moduleStatus = {};
+
+function setMode(mode) {
+  currentMode = mode;
+  MODULES = mode === 'agent' ? MODULES_AGENT : MODULES_SCAN;
+}
+
+function buildModuleGrid(){
+  const container = document.getElementById('module-items');
+  container.innerHTML = '';
+  moduleStatus = {};
+  MODULES.forEach(m => {
+    moduleStatus[m.key] = 'pending';
+    const el = document.createElement('div');
+    el.className = 'module-item';
+    el.id = 'mod-' + m.key;
+    el.innerHTML = `<span class="module-icon">${m.icon}</span><span>${m.label}</span>`;
+    container.appendChild(el);
+  });
+}
+
+function setModuleStatus(key, status){
+  const el = document.getElementById('mod-' + key);
+  if(!el) return;
+  el.className = 'module-item ' + status;
+}
+
+function setPhase(n){
+  if(n <= currentPhase) return;
+  const prefix = currentMode === 'agent' ? 'aphase-' : 'phase-';
+  for(let i = 0; i <= n-1; i++){
+    const el = document.getElementById(prefix + i);
+    if(el){ el.classList.remove('active'); el.classList.add('done'); }
+  }
+  const cur = document.getElementById(prefix + n);
+  if(cur){ cur.classList.remove('done'); cur.classList.add('active'); }
+  currentPhase = n;
+}
+
+function resetPhaseTrack(){
+  document.getElementById('phase-track-scan').style.display  = currentMode === 'scan'  ? '' : 'none';
+  document.getElementById('phase-track-agent').style.display = currentMode === 'agent' ? '' : 'none';
+  const prefix = currentMode === 'agent' ? 'aphase-' : 'phase-';
+  const count  = currentMode === 'agent' ? 8 : 6;
+  for(let i = 0; i < count; i++){
+    const el = document.getElementById(prefix + i);
+    if(el){ el.classList.remove('active','done'); }
+  }
+}
+
+function addLog(msg){
+  const body = document.getElementById('log-body');
+  const el = document.createElement('div');
+  const now = new Date().toLocaleTimeString('en-US',{hour12:false});
+
+  if(msg.type === 'phase'){
+    el.className = 'log-entry phase-announce';
+    el.textContent = `── Phase ${msg.phase}: ${msg.label} ──`;
+    setPhase(msg.phase);
+  } else if(msg.type === 'log'){
+    el.className = `log-entry log-${msg.level}`;
+    const modName = (msg.module || 'system').slice(0,12);
+    el.innerHTML = `<span class="log-time">${now}</span><span class="log-mod">${modName}</span><span class="log-text">${escHtml(msg.text)}</span>`;
+
+    // Auto-detect module running
+    MODULES.forEach(m => {
+      if(msg.text.includes(m.key) || msg.text.toLowerCase().includes(m.label.toLowerCase())){
+        setModuleStatus(m.key, 'running');
+      }
+    });
+  } else if(msg.type === 'error'){
+    el.className = 'log-entry log-ERROR';
+    el.innerHTML = `<span class="log-time">${now}</span><span class="log-mod" style="color:var(--red)">ERROR</span><span class="log-text" style="color:var(--red)">${escHtml(msg.message)}</span>`;
+  }
+
+  body.appendChild(el);
+  body.scrollTop = body.scrollHeight;
+}
+
+function escHtml(s){
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+function showScore(result){
+  const score = result.score;
+  const grade = result.grade;
+
+  document.getElementById('score-display').textContent = score;
+  document.getElementById('score-display').classList.add('scored');
+  document.getElementById('score-bar').style.width = score + '%';
+  document.getElementById('score-card').classList.add('scored');
+  document.getElementById('score-desc').textContent = result.grade_description || '';
+
+  const gradeBadge = document.getElementById('grade-badge-wrap');
+  gradeBadge.innerHTML = `<div class="grade-badge grade-${grade}" style="font-size:1.8rem;width:60px;height:60px;line-height:60px;">${grade}</div>`;
+
+  // Sev pills
+  const counts = result.severity_counts || {};
+  const pills = document.getElementById('sev-pills');
+  pills.innerHTML = '';
+  [['C','Critical'], ['H','High'], ['M','Medium'], ['L','Low']].forEach(([short, full]) => {
+    const n = counts[full] || 0;
+    if(n > 0){
+      const p = document.createElement('span');
+      p.className = `sev-pill sev-pill-${short}`;
+      p.innerHTML = `${full} <strong>${n}</strong>`;
+      pills.appendChild(p);
+    }
+  });
+}
+
+function renderFindings(findings){
+  currentFindings = findings;
+  document.getElementById('findings-count').textContent = findings.length;
+  document.getElementById('findings-section').classList.add('visible');
+  renderFilteredFindings('all');
+}
+
+function renderFilteredFindings(filter){
+  const list = document.getElementById('finding-list');
+  list.innerHTML = '';
+  const visible = filter === 'all' ? currentFindings
+    : currentFindings.filter(f => f.severity === filter);
+
+  visible.forEach((f, idx) => {
+    const riskClass = f.risk_score >= 20 ? 'crit' : f.risk_score >= 12 ? 'high' : f.risk_score >= 6 ? 'med' : 'low';
+    const card = document.createElement('div');
+    card.className = `finding-card sev-${f.severity}`;
+    card.innerHTML = `
+      <div class="finding-header" onclick="toggleFinding(this)">
+        <span class="sev-badge sev-badge-${f.severity}">${f.severity}</span>
+        <span class="finding-title">${escHtml(f.title)}</span>
+        <div class="finding-risk">
+          <div class="risk-dot risk-dot-${riskClass}">${f.risk_score}</div>
+        </div>
+        <span style="color:var(--muted);font-size:14px;margin-left:4px;transition:transform .3s" class="expand-arrow">▾</span>
+      </div>
+      <div class="finding-expand" id="fe-${idx}">
+        <div class="finding-body">
+          <div class="finding-desc">${escHtml(f.description)}</div>
+          <div class="finding-url">${escHtml(f.affected_url)}</div>
+          <div class="finding-proof">${escHtml(f.proof)}</div>
+          <div class="remediation-box">
+            <div class="remediation-label">Remediation</div>
+            <div class="remediation-text">${escHtml(f.remediation)}</div>
+          </div>
+        </div>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function toggleFinding(header){
+  const expand = header.nextElementSibling;
+  const arrow = header.querySelector('.expand-arrow');
+  expand.classList.toggle('open');
+  if(arrow) arrow.style.transform = expand.classList.contains('open') ? 'rotate(180deg)' : '';
+}
+
+function filterFindings(sev, el){
+  document.querySelectorAll('.filter-pill').forEach(p => {
+    p.classList.remove('active','active-C','active-H','active-M','active-L');
+  });
+  if(sev === 'all') el.classList.add('active');
+  else el.classList.add('active-' + sev[0]);
+  renderFilteredFindings(sev);
+}
+
+function setBothButtons(loading) {
+  const s = document.getElementById('btn-scan');
+  const a = document.getElementById('btn-agent');
+  if(loading) {
+    s.disabled = true; a.disabled = true;
+  } else {
+    s.disabled = false; a.disabled = false;
+    s.classList.remove('loading');
+    a.classList.remove('loading');
+  }
+}
+
+async function startScan(mode){
+  const url = document.getElementById('target-url').value.trim();
+  if(!url){ toast('Please enter a target URL', true); return; }
+  if(!/^https?:\/\//i.test(url)){ toast('URL must start with http:// or https://', true); return; }
+
+  setMode(mode);
+  const activeBtn = document.getElementById(mode === 'agent' ? 'btn-agent' : 'btn-scan');
+  activeBtn.classList.add('loading');
+  setBothButtons(true);
+  currentFindings = [];
+  currentPhase = -1;
+
+  document.getElementById('hero-section').style.opacity = '0.3';
+  document.getElementById('hero-section').style.pointerEvents = 'none';
+  document.getElementById('scan-dashboard').classList.add('visible');
+  document.getElementById('log-body').innerHTML = '';
+  document.getElementById('score-display').textContent = '—';
+  document.getElementById('grade-badge-wrap').innerHTML = '';
+  document.getElementById('sev-pills').innerHTML = '';
+  document.getElementById('score-bar').style.width = '0%';
+  document.getElementById('score-card').classList.remove('scored');
+  document.getElementById('score-desc').textContent = mode === 'agent' ? 'Agent running…' : 'Scan in progress…';
+  document.getElementById('findings-section').classList.remove('visible');
+  document.getElementById('report-buttons').classList.remove('visible');
+  document.getElementById('finding-list').innerHTML = '';
+
+  resetPhaseTrack();
+  buildModuleGrid();
+
+  addLog({type:'log', level:'INFO', module:'zparty',
+    text:`Starting ${mode === 'agent' ? 'AI Agent' : 'Full Scan'}: ${url}`});
+
+  try {
+    const endpoint = mode === 'agent' ? '/api/agent' : '/api/scan';
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({target: url}),
+    });
+    const data = await res.json();
+    scanId = data.scan_id;
+
+    ws = new WebSocket(`ws://${location.host}/ws/${scanId}`);
+    ws.onmessage = onWsMessage;
+    ws.onerror   = () => toast('WebSocket error', true);
+    ws.onclose   = () => setBothButtons(false);
+
+  } catch(e){
+    toast('Failed to start: ' + e.message, true);
+    setBothButtons(false);
+  }
+}
+
+function onWsMessage(event){
+  let msg;
+  try { msg = JSON.parse(event.data); } catch(e){ return; }
+
+  if(msg.type === 'ping') return;
+
+  if(msg.type === 'phase'){
+    addLog(msg);
+    setPhase(msg.phase);
+    return;
+  }
+
+  if(msg.type === 'log' || msg.type === 'error'){
+    addLog(msg);
+    if(msg.type === 'log' && msg.text){
+      // Module done/error from log
+      const m1 = msg.text.match(/\[(\w+)\] completed/);
+      if(m1) setModuleStatus(m1[1], 'done');
+      const m2 = msg.text.match(/\[(\w+)\] crashed/);
+      if(m2) setModuleStatus(m2[1], 'error');
+      // Running detection
+      MODULES.forEach(mod => {
+        if(msg.module && msg.module.toLowerCase() === mod.key.toLowerCase())
+          setModuleStatus(mod.key, 'running');
+      });
+    }
+    return;
+  }
+
+  if(msg.type === 'done'){
+    setBothButtons(false);
+
+    // Finish all phase steps
+    const prefix = currentMode === 'agent' ? 'aphase-' : 'phase-';
+    const phaseCount = currentMode === 'agent' ? 8 : 6;
+    for(let i = 0; i < phaseCount; i++){
+      const el = document.getElementById(prefix + i);
+      if(el){ el.classList.remove('active'); el.classList.add('done'); }
+    }
+    MODULES.forEach(m => {
+      if(moduleStatus[m.key] !== 'error') setModuleStatus(m.key, 'done');
+    });
+
+    // Always show score (server now always sends it)
+    const score = typeof msg.score === 'number' ? msg.score : 0;
+    const grade = msg.grade || 'E';
+    showScore({ score, grade, severity_counts: msg.severity_counts || {} });
+
+    if(msg.report_paths) reportPaths = msg.report_paths;
+
+    addLog({type:'log', level:'INFO', module:'zparty',
+      text:`✓ Scan complete — Score: ${score}/100  Grade: ${grade}  Findings: ${msg.findings_count ?? 0}  Duration: ${msg.duration ?? 0}s`});
+
+    // Fetch findings for the table
+    fetch('/report-data/' + scanId)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if(d && d.findings && d.findings.length) renderFindings(d.findings); })
+      .catch(() => {});
+
+    document.getElementById('report-buttons').classList.add('visible');
+
+    // Show exploit button only after a full scan (not after agent, not after exploit)
+    const exploitBtn = document.getElementById('btn-exploit-cta');
+    if(exploitBtn && currentMode === 'scan' && (msg.findings_count ?? 0) > 0) {
+      exploitBtn.style.display = 'inline-flex';
+    }
+
+    const ok = score > 0 || (msg.findings_count === 0);
+    toast(`Scan complete — Score: ${score}/100  Grade: ${grade}  |  ${msg.findings_count ?? 0} findings`, !ok);
+  }
+}
+
+function openReport(type){
+  const p = reportPaths[type];
+  if(p){
+    // On desktop, open/download
+    const a = document.createElement('a');
+    a.href = '/report/' + scanId + '/' + type;
+    a.target = '_blank';
+    a.click();
+  } else {
+    toast('Report not generated yet', true);
+  }
+}
+
+function resetScan(){
+  document.getElementById('hero-section').style.opacity = '1';
+  document.getElementById('hero-section').style.pointerEvents = 'auto';
+  document.getElementById('scan-dashboard').classList.remove('visible');
+  document.getElementById('target-url').value = '';
+  if(ws){ ws.close(); ws = null; }
+  setBothButtons(false);
+  document.querySelectorAll('.phase-step').forEach(s => s.classList.remove('active','done'));
+}
+
+function toast(msg, isError=false){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.background = isError ? 'rgba(239,68,68,0.15)' : 'rgba(52,211,153,0.15)';
+  el.style.borderColor = isError ? 'rgba(239,68,68,0.4)' : 'rgba(52,211,153,0.4)';
+  el.style.color = isError ? 'var(--red)' : 'var(--green)';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+// ── EXPLOIT ENGINE ───────────────────────────────────────────────────────────
+let exploitWs = null;
+let exploitReportPaths = {};
+let exploitPhase = -1;
+
+function setExploitPhase(n) {
+  if(n <= exploitPhase) return;
+  for(let i = 0; i < n; i++) {
+    const el = document.getElementById('ephase-' + i);
+    if(el) { el.classList.remove('active'); el.classList.add('done'); }
+  }
+  const cur = document.getElementById('ephase-' + n);
+  if(cur) { cur.classList.remove('done'); cur.classList.add('active'); }
+  exploitPhase = n;
+}
+
+function addExploitLog(msg) {
+  const body = document.getElementById('exploit-log-body');
+  if(!body) return;
+  const el = document.createElement('div');
+  const now = new Date().toLocaleTimeString('en-US', {hour12: false});
+
+  if(msg.type === 'phase') {
+    el.className = 'log-entry phase-announce';
+    el.style.borderLeftColor = 'var(--red)';
+    el.style.background = 'rgba(239,68,68,0.06)';
+    el.style.color = 'var(--red)';
+    el.textContent = `── ${msg.label} ──`;
+    setExploitPhase(msg.phase);
+  } else if(msg.type === 'log' || msg.type === 'error') {
+    el.className = `log-entry log-${msg.level}`;
+    const mod = (msg.module || 'exploit').slice(0, 12);
+    el.innerHTML = `<span class="log-time">${now}</span><span class="log-mod" style="color:var(--red)">${escHtml(mod)}</span><span class="log-text">${escHtml(msg.text || msg.message || '')}</span>`;
+  }
+
+  body.appendChild(el);
+  body.scrollTop = body.scrollHeight;
+}
+
+function renderExploitResult(r) {
+  const list = document.getElementById('exploit-results-list');
+  const card = document.createElement('div');
+  card.className = `exploit-result-card ${r.success ? 'confirmed' : 'partial'}`;
+  const icon = r.success ? '💥' : '〰';
+  const label = r.success ? 'CONFIRMED' : 'PARTIAL';
+  card.innerHTML = `
+    <span class="exploit-result-icon">${icon}</span>
+    <div>
+      <div class="exploit-result-title">${escHtml(r.title)}</div>
+      <div style="font-size:10px;opacity:0.7;margin-top:2px;">${label}</div>
+      ${r.output ? `<div class="exploit-result-output">${escHtml(r.output.slice(0,120))}</div>` : ''}
+    </div>
+  `;
+  list.appendChild(card);
+}
+
+async function startExploit() {
+  if(!scanId) { toast('No scan to exploit', true); return; }
+  exploitPhase = -1;
+  exploitReportPaths = {};
+
+  document.getElementById('exploit-dashboard').style.display = 'block';
+  document.getElementById('exploit-log-body').innerHTML = '';
+  document.getElementById('exploit-results-list').innerHTML = '';
+  document.getElementById('exploit-confirmed-count').textContent = '—';
+  document.getElementById('exploit-attempted-count').textContent = 'of — attempted';
+  document.getElementById('exploit-report-btns').style.display = 'none';
+  document.querySelectorAll('#phase-track-exploit .phase-step')
+    .forEach(s => s.classList.remove('active','done'));
+
+  document.getElementById('btn-exploit-cta').disabled = true;
+  document.getElementById('btn-exploit-cta').textContent = '🔥 Exploiting…';
+
+  document.getElementById('exploit-dashboard').scrollIntoView({behavior:'smooth'});
+
+  try {
+    const res = await fetch(`/api/exploit/${scanId}`, {method:'POST'});
+    if(!res.ok) {
+      const err = await res.json();
+      toast(err.detail || 'Exploit failed to start', true);
+      document.getElementById('btn-exploit-cta').disabled = false;
+      document.getElementById('btn-exploit-cta').textContent = '🔥 Run Exploit Engine';
+      return;
+    }
+    const data = await res.json();
+    const exploitId = data.exploit_id;
+
+    exploitWs = new WebSocket(`ws://${location.host}/ws/${exploitId}`);
+    exploitWs.onmessage = (event) => {
+      let msg;
+      try { msg = JSON.parse(event.data); } catch(e) { return; }
+      if(msg.type === 'ping') return;
+
+      if(msg.type === 'exploit_result') {
+        renderExploitResult(msg);
+        return;
+      }
+
+      if(msg.type === 'phase' || msg.type === 'log' || msg.type === 'error') {
+        addExploitLog(msg);
+        return;
+      }
+
+      if(msg.type === 'done') {
+        const confirmed = msg.confirmed ?? 0;
+        const attempted = msg.attempted ?? 0;
+        document.getElementById('exploit-confirmed-count').textContent = confirmed;
+        document.getElementById('exploit-attempted-count').textContent = `of ${attempted} attempted`;
+
+        // Final phase done
+        for(let i = 0; i <= 4; i++) {
+          const el = document.getElementById('ephase-' + i);
+          if(el) { el.classList.remove('active'); el.classList.add('done'); }
+        }
+
+        exploitReportPaths = msg.report_paths || {};
+        if(exploitReportPaths.html) {
+          document.getElementById('exploit-report-btns').style.display = 'flex';
+        }
+
+        document.getElementById('btn-exploit-cta').disabled = false;
+        document.getElementById('btn-exploit-cta').textContent = '🔥 Re-Exploit';
+
+        const emoji = confirmed > 0 ? '💥' : '〰';
+        toast(`${emoji} ${confirmed}/${attempted} exploits confirmed — ${msg.duration}s`, confirmed === 0);
+      }
+    };
+    exploitWs.onerror = () => toast('WebSocket error (exploit)', true);
+
+  } catch(e) {
+    toast('Failed to start exploit: ' + e.message, true);
+    document.getElementById('btn-exploit-cta').disabled = false;
+    document.getElementById('btn-exploit-cta').textContent = '🔥 Run Exploit Engine';
+  }
+}
+
+function openExploitReport() {
+  if(exploitReportPaths.html) {
+    window.open(exploitReportPaths.html, '_blank');
+  } else {
+    toast('PoC report not ready', true);
+  }
+}
+
+// Enter key on URL input
+document.getElementById('target-url').addEventListener('keydown', e => {
+  if(e.key === 'Enter') startScan('scan');
+});
+</script>
+</body>
+</html>
+

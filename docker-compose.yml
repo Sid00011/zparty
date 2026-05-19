@@ -1,0 +1,60 @@
+version: "3.9"
+
+# ── Zparty Docker Compose ─────────────────────────────────────────────────────
+# Usage:
+#   docker compose run --rm zparty scan https://example.com
+#   docker compose up zparty-ui        # start the web UI
+#
+# Mount your own wordlists:
+#   WORDLIST_DIR=/path/to/wordlists docker compose run --rm zparty scan https://example.com
+
+services:
+
+  # ── CLI scan runner ─────────────────────────────────────────────────────────
+  zparty:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: zparty:latest
+    container_name: zparty-scan
+    network_mode: host          # needs raw network access for port scanning
+    cap_add:
+      - NET_ADMIN               # nmap SYN scan
+      - NET_RAW
+    volumes:
+      - ${RESULTS_DIR:-./results}:/app/results
+      - ${WORDLIST_DIR:-./wordlists}:/app/wordlists
+      - ${CONFIG_FILE:-./config.yaml}:/app/config.yaml:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    # Override CMD at runtime: docker compose run --rm zparty scan https://target.com
+    command: ["--help"]
+
+  # ── Web UI (FastAPI) ────────────────────────────────────────────────────────
+  zparty-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: zparty:latest
+    container_name: zparty-ui
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - ${RESULTS_DIR:-./results}:/app/results
+      - ${WORDLIST_DIR:-./wordlists}:/app/wordlists
+      - ${CONFIG_FILE:-./config.yaml}:/app/config.yaml:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: ["python", "-m", "uvicorn", "ui.server:app",
+              "--host", "0.0.0.0", "--port", "8000",
+              "--reload"]
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

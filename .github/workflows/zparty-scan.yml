@@ -1,0 +1,131 @@
+name: Zparty Security Scan
+
+# Trigger on push/PR to main branches, or manually
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    - cron: "0 2 * * 1"   # every Monday at 02:00 UTC
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Target URL to scan"
+        required: true
+        default: "https://staging.example.com"
+      fail_on:
+        description: "Fail pipeline on severity (critical/high/medium)"
+        required: false
+        default: "critical"
+
+jobs:
+  zparty-dast:
+    name: "DAST Scan — ${{ github.event.inputs.target || vars.STAGING_URL }}"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write   # required to upload SARIF to Code Scanning
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install chromium --with-deps
+
+      - name: Install nmap
+        run: sudo apt-get install -y nmap
+
+      - name: Run Zparty scan
+        env:
+          TARGET: ${{ github.event.inputs.target || vars.STAGING_URL || 'https://staging.example.com' }}
+          FAIL_ON: ${{ github.event.inputs.fail_on || 'critical' }}
+        run: |
+          python main.py scan "$TARGET" \
+            --output results \
+            --config config.yaml
+        # Exit code: 0=pass, 1=critical found, 2=high found, 3=medium found
+        continue-on-error: true
+        id: scan
+
+      - name: Upload SARIF to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: results/*/report/report.sarif
+          category: zparty-dast
+        continue-on-error: true   # Don't fail if no sarif yet
+
+      - name: Upload scan artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zparty-scan-results
+          path: results/
+          retention-days: 30
+
+      - name: Comment PR with findings summary
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const glob = require('glob');
+            const jsonFiles = glob.sync('results/*/report/report.json');
+            if (!jsonFiles.length) return;
+            const report = JSON.parse(fs.readFileSync(jsonFiles[0]));
+            const score = report.score?.score ?? 'N/A';
+            const grade = report.score?.grade ?? '?';
+            const counts = report.score?.severity_counts ?? {};
+            const body = [
+              '## ⚡ Zparty Security Scan Results',
+              `**Target:** ${report.target_url}`,
+              `**Grade:** \`${grade}\`  **Score:** \`${score}/100\``,
+              `**Duration:** ${report.duration_seconds}s`,
+              '',
+              '| Severity | Count |',
+              '|----------|-------|',
+              `| 🔴 Critical | ${counts.Critical ?? 0} |`,
+              `| 🟠 High | ${counts.High ?? 0} |`,
+              `| 🟡 Medium | ${counts.Medium ?? 0} |`,
+              `| 🟢 Low | ${counts.Low ?? 0} |`,
+            ].join('\n');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });
+
+      - name: Fail pipeline on critical findings
+        if: steps.scan.outcome == 'failure'
+        run: |
+          FAIL_ON="${{ github.event.inputs.fail_on || 'critical' }}"
+          REPORT=$(ls results/*/report/report.json 2>/dev/null | head -1)
+          if [ -z "$REPORT" ]; then exit 0; fi
+          CRITICAL=$(python -c "import json; d=json.load(open('$REPORT')); print(d['score']['severity_counts'].get('Critical',0))")
+          HIGH=$(python -c "import json; d=json.load(open('$REPORT')); print(d['score']['severity_counts'].get('High',0))")
+          MEDIUM=$(python -c "import json; d=json.load(open('$REPORT')); print(d['score']['severity_counts'].get('Medium',0))")
+          echo "Critical=$CRITICAL High=$HIGH Medium=$MEDIUM"
+          if [ "$FAIL_ON" = "critical" ] && [ "$CRITICAL" -gt 0 ]; then
+            echo "❌ Pipeline failed: $CRITICAL critical finding(s) detected"
+            exit 1
+          fi
+          if [ "$FAIL_ON" = "high" ] && [ $((CRITICAL + HIGH)) -gt 0 ]; then
+            echo "❌ Pipeline failed: critical/high findings detected"
+            exit 1
+          fi
+          if [ "$FAIL_ON" = "medium" ] && [ $((CRITICAL + HIGH + MEDIUM)) -gt 0 ]; then
+            echo "❌ Pipeline failed: critical/high/medium findings detected"
+            exit 1
+          fi
+          echo "✅ Scan complete — no findings above threshold"
