@@ -6,6 +6,8 @@ Zparty runs a full black-box security audit in one command — recon, scanning, 
 
 No API keys. No cloud. Everything runs on your machine.
 
+![Zparty UI](assets/screenshot.png)
+
 ---
 
 ## What it does
